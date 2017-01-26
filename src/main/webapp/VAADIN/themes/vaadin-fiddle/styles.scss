@@ -1,0 +1,11 @@
+@import "vaadin-fiddle.scss";
+@import "addons.scss";
+
+// This file prefixes all rules with the theme name to avoid causing conflicts with other themes.
+// The actual styles should be defined in vaadin-fiddle.scss
+
+.vaadin-fiddle {
+  @include addons;
+  @include vaadin-fiddle;
+
+}
