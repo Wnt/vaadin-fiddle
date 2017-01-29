@@ -13,6 +13,10 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
 import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.ExposedPorts;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
@@ -53,14 +57,15 @@ public class VaadinFiddleUi extends UI {
 		button.addClickListener(e -> {
 			Builder configBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder();
 			DockerClient dockerClient = DockerClientBuilder.getInstance(configBuilder.build()).build();
-
+			ExposedPort exposedPort = new ExposedPort(8080);
+			PortBinding portBinding = new PortBinding(new Binding(null, null), exposedPort);
 			Volume volume = new Volume("/webapp/fiddleapp");
-//			Bind bind = new Bind("/home/jonni/vaadin_fiddles/test01", volume);
 			CreateContainerResponse container = dockerClient.createContainerCmd("vaadin-stub")
 					.withVolumes(volume)
 					.withCmd("bash")
 					.withTty(true)
-//					 .withBinds(bind)
+					.withPortBindings(portBinding)
+					.withExposedPorts(exposedPort)
 					.exec();
 			String id = container.getId();
 
@@ -78,7 +83,10 @@ public class VaadinFiddleUi extends UI {
 
 			}
 			for (Mount mount : containerInfo.getMounts()) {
-				layout.addComponent(new Label(mount.getSource() + " -> " + mount.getDestination().getPath()));
+				String target = mount.getDestination().getPath();
+				if ("/webapp/fiddleapp".equals(target)) {
+					layout.addComponent(new Label(mount.getSource() + " -> " + target));
+				}
 
 			}
 
