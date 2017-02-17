@@ -23,14 +23,11 @@ import com.vaadin.data.ValueProvider;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
+import com.vaadin.server.Page;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.Grid;
-import com.vaadin.ui.Grid.Column;
-import com.vaadin.ui.Notification;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.renderers.ButtonRenderer;
-import com.vaadin.ui.renderers.ClickableRenderer.RendererClickListener;
 import com.vaadin.ui.renderers.HtmlRenderer;
 
 public class ListView extends CustomComponent implements View {
@@ -116,12 +113,10 @@ public class ListView extends CustomComponent implements View {
 
 		}).setCaption("IP");
 		
-		ButtonRenderer<Container> openRenderer = new ButtonRenderer<>( ce -> {
-			Notification.show("You clicked on " + ce.getItem().getNames()[0]);
-		});
 		grid.addColumn(((ValueProvider<Container, String>) c -> {
-			return VaadinIcons.EXTERNAL_LINK.getHtml();
-		}), openRenderer);
+			String containerPage = "#!container/" + c.getId();
+			return "<a href=\""+containerPage+"\" title=\"Inspect container\">"+VaadinIcons.EXTERNAL_LINK.getHtml()+"</a>";
+		}), new HtmlRenderer()).setCaption("Tools");
 
 		grid.addColumn(Container::getCommand).setCaption("Command");
 		grid.addColumn(c -> {
@@ -147,7 +142,7 @@ public class ListView extends CustomComponent implements View {
 
 	@Override
 	public void enter(ViewChangeEvent event) {
-		// TODO Auto-generated method stub
+		Page.getCurrent().setTitle("Container list - VaadinFiddle");
 
 	}
 
