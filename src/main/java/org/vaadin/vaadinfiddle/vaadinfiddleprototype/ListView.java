@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
@@ -21,15 +19,19 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports.Binding;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.vaadin.data.ValueProvider;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.Grid;
 import com.vaadin.ui.Grid.Column;
-import com.vaadin.ui.Label;
+import com.vaadin.ui.Notification;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.themes.ValoTheme;
+import com.vaadin.ui.renderers.ButtonRenderer;
+import com.vaadin.ui.renderers.ClickableRenderer.RendererClickListener;
+import com.vaadin.ui.renderers.HtmlRenderer;
 
 public class ListView extends CustomComponent implements View {
 	private VerticalLayout layout;
@@ -42,17 +44,17 @@ public class ListView extends CustomComponent implements View {
 		layout = new VerticalLayout();
 		setCompositionRoot(layout);
 		layout.setSizeFull();
-		
+
 		DockerService dService = FiddleUi.getDockerservice();
 		dockerClient = dService.getDockerClient();
 
 		createTestButton();
-		
+
 		createList();
 	}
 
 	private void createTestButton() {
-		Button button = new Button("Click Me");
+		Button button = new Button("Start a new instance");
 		layout.addComponents(button);
 		button.addClickListener(e -> {
 			ExposedPort exposedPort = new ExposedPort(8080);
@@ -89,7 +91,6 @@ public class ListView extends CustomComponent implements View {
 		}).setCaption("Name");
 		grid.addColumn(Container::getImage).setCaption("Image");
 		grid.addColumn(Container::getStatus).setCaption("Status");
-		grid.addColumn(Container::getCommand).setCaption("Command");
 		grid.addColumn(c -> {
 			ContainerPort[] ports = c.getPorts();
 			ArrayList<String> portStrings = new ArrayList<>();
@@ -112,14 +113,22 @@ public class ListView extends CustomComponent implements View {
 
 			}
 			return String.join(",", ips);
-			
-		}).setCaption("IP");
 
+		}).setCaption("IP");
+		
+		ButtonRenderer<Container> openRenderer = new ButtonRenderer<>( ce -> {
+			Notification.show("You clicked on " + ce.getItem().getNames()[0]);
+		});
+		grid.addColumn(((ValueProvider<Container, String>) c -> {
+			return VaadinIcons.EXTERNAL_LINK.getHtml();
+		}), openRenderer);
+
+		grid.addColumn(Container::getCommand).setCaption("Command");
 		grid.addColumn(c -> {
 			ContainerNetworkSettings networkSettings = c.getNetworkSettings();
 
 			InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(c.getId()).exec();
-			
+
 			for (Mount mount : containerInfo.getMounts()) {
 				String target = mount.getDestination().getPath();
 				if ("/webapp/fiddleapp".equals(target)) {
