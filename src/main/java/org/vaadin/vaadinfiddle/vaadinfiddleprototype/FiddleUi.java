@@ -5,6 +5,7 @@ import javax.servlet.annotation.WebServlet;
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
+import com.vaadin.annotations.Widgetset;
 import com.vaadin.navigator.Navigator;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
@@ -24,6 +25,7 @@ import com.vaadin.ui.UI;
  */
 @Theme("vaadin-fiddle")
 @Push
+@Widgetset("com.vaadin.v7.Vaadin7WidgetSet")
 public class FiddleUi extends UI {
 
 	final private static DockerService dockerService = new DockerService();
