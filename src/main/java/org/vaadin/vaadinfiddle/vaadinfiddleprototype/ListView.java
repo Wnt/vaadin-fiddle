@@ -34,6 +34,7 @@ public class ListView extends CustomComponent implements View {
 	private VerticalLayout layout;
 	private DockerClient dockerClient;
 	private Grid<Container> grid;
+	private DockerService dockerService;
 
 	public ListView() {
 		setSizeFull();
@@ -42,8 +43,8 @@ public class ListView extends CustomComponent implements View {
 		setCompositionRoot(layout);
 		layout.setSizeFull();
 
-		DockerService dService = FiddleUi.getDockerservice();
-		dockerClient = dService.getDockerClient();
+		dockerService = FiddleUi.getDockerservice();
+		dockerClient = dockerService.getDockerClient();
 
 		createTestButton();
 
@@ -54,22 +55,14 @@ public class ListView extends CustomComponent implements View {
 		Button button = new Button("Start a new instance");
 		layout.addComponents(button);
 		button.addClickListener(e -> {
-			ExposedPort exposedPort = new ExposedPort(8080);
-			PortBinding portBinding = new PortBinding(new Binding(null, null), exposedPort);
-			Volume volume = new Volume("/webapp/fiddleapp");
-			CreateContainerResponse container = dockerClient.createContainerCmd("vaadin-stub").withVolumes(volume)
-					.withCmd("bash").withTty(true).withPortBindings(portBinding).withExposedPorts(exposedPort).exec();
+			CreateContainerResponse container = dockerService.createFiddleContainer();
 			String id = container.getId();
 
-			dockerClient.startContainerCmd(id).exec();
+			dockerService.startContainer(id);
 
-			ExecCreateCmdResponse cmd = dockerClient.execCreateCmd(id)
-					.withCmd("su", "vaadin", "-c", "cd /webapp/fiddleapp; mvn jetty:run").withAttachStdout(true).exec();
-
-			ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-
-			ExecStartResultCallback start = dockerClient.execStartCmd(cmd.getId()).withDetach(false).withTty(true)
-					.exec(new ExecStartResultCallback(System.out, System.err));
+			dockerService.runJetty(id);
+			
+			
 			refreshList();
 		});
 	}

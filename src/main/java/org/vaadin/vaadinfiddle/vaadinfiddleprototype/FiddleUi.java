@@ -1,5 +1,7 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
+import java.util.Properties;
+
 import javax.servlet.annotation.WebServlet;
 
 import com.vaadin.annotations.Push;
@@ -10,6 +12,7 @@ import com.vaadin.navigator.Navigator;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
+import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.UI;
@@ -43,8 +46,13 @@ public class FiddleUi extends UI {
 		return dockerService;
 	}
 
-	@WebServlet(urlPatterns = "/*", name = "VaadinFiddleUiServlet", asyncSupported = true)
+	@WebServlet(urlPatterns = {"/vaadinfiddle/*", "/*"}, name = "VaadinFiddleUiServlet", asyncSupported = true)
 	@VaadinServletConfiguration(ui = FiddleUi.class, productionMode = false)
 	public static class VaadinFiddleUiServlet extends VaadinServlet {
+		@Override
+		protected DeploymentConfiguration createDeploymentConfiguration(Properties initParameters) {
+			// TODO Auto-generated method stub
+			return super.createDeploymentConfiguration(initParameters);
+		}
 	}
 }
