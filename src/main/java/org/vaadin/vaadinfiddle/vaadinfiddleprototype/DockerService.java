@@ -1,6 +1,9 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
@@ -37,24 +40,20 @@ public class DockerService {
 		return container;
 	}
 
-
 	public void startContainer(String id) {
 		dockerClient.startContainerCmd(id).exec();
 	}
 
-
-	public void runJetty(String id) {
+	public void runJetty(String id, OutputStream stdout) {
 		ExecCreateCmdResponse cmd = dockerClient.execCreateCmd(id)
 				.withCmd("su", "vaadin", "-c", "cd /webapp/fiddleapp; mvn jetty:run").withAttachStdout(true).exec();
 
-		ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-
 		ExecStartResultCallback start = dockerClient.execStartCmd(cmd.getId()).withDetach(false).withTty(true)
-				.exec(new ExecStartResultCallback(System.out, System.err));
+				.exec(new ExecStartResultCallback(new BufferedOutputStream(stdout), System.err));
 	}
-	
-	public void restartJetty(String id) {
+
+	public void restartJetty(String id, OutputStream os) {
 		dockerClient.restartContainerCmd(id).exec();
-		runJetty(id);
+		runJetty(id, os);
 	}
 }

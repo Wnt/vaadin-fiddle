@@ -1,6 +1,8 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +26,14 @@ import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.Page;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.Grid;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.renderers.HtmlRenderer;
 
 public class ListView extends CustomComponent implements View {
@@ -55,17 +61,21 @@ public class ListView extends CustomComponent implements View {
 		Button button = new Button("Start a new instance");
 		layout.addComponents(button);
 		button.addClickListener(e -> {
-			CreateContainerResponse container = dockerService.createFiddleContainer();
-			String id = container.getId();
-
-			dockerService.startContainer(id);
-
-			dockerService.runJetty(id);
-			
-			
-			refreshList();
+			createNewContainer();
 		});
 	}
+
+	private void createNewContainer() {
+		CreateContainerResponse container = dockerService.createFiddleContainer();
+		String id = container.getId();
+
+		dockerService.startContainer(id);
+
+		dockerService.runJetty(id, new WindowOutput());
+
+		refreshList();
+	}
+
 
 	private void createList() {
 
@@ -105,10 +115,11 @@ public class ListView extends CustomComponent implements View {
 			return String.join(",", ips);
 
 		}).setCaption("IP");
-		
+
 		grid.addColumn(((ValueProvider<Container, String>) c -> {
 			String containerPage = "#!container/" + c.getId();
-			return "<a href=\""+containerPage+"\" title=\"Inspect container\">"+VaadinIcons.EXTERNAL_LINK.getHtml()+"</a>";
+			return "<a href=\"" + containerPage + "\" title=\"Inspect container\">"
+					+ VaadinIcons.EXTERNAL_LINK.getHtml() + "</a>";
 		}), new HtmlRenderer()).setCaption("Tools");
 
 		grid.addColumn(Container::getCommand).setCaption("Command");

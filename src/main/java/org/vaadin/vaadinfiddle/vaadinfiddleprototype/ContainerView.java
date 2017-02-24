@@ -37,6 +37,7 @@ public class ContainerView extends CustomComponent implements View {
 			TextFileProperty tf = new TextFileProperty(file);
 			setPropertyDataSource(tf);
 			setBuffered(true);
+			addStyleName("file-editor");
 		}
 
 		public File getFile() {
@@ -155,34 +156,20 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void restartJetty() {
-		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId());
+		WindowOutput consoleOutput = new WindowOutput();
+		consoleOutput.addJettyStartListener(() -> {
+			editorTabs.getUI().access(new Runnable() {
+				
+				@Override
+				public void run() {
+					createFiddleWindow();
+					
+				}
+			});
+		});
+		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(),consoleOutput);
 		readContainerInfo();
 		fiddleWindow.close();
-		
-		Runnable r = new Runnable() {
-			
-			@Override
-			public void run() {
-				try {
-					// wait until jetty is back online
-					Thread.sleep(15000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				editorTabs.getUI().access(new Runnable() {
-					
-					@Override
-					public void run() {
-						createFiddleWindow();
-						
-					}
-				});
-			}
-		};
-		
-		new Thread(r).start();
-		
 	}
 
 	private void saveAllFiles() {

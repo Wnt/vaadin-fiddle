@@ -35,4 +35,18 @@
   @include valo;
 
   // Insert your own theme rules here
+  .console-output-window .v-window-contents .console-msg-container {
+    line-height: 12px;
+    
+    .v-label {
+      width: 100%;
+      white-space: normal;
+      font-size: 10px;
+      line-height: 10px;
+      font-family: monospace;
+    }
+  }
+  .file-editor {
+    overflow-y: auto;
+  }
 }
