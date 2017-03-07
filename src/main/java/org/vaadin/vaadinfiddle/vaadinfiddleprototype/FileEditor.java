@@ -45,6 +45,7 @@ public final class FileEditor extends CustomField<String> {
 		});
 		TextFileProperty tf = new TextFileProperty(file);
 		setPropertyDataSource(tf);
+		setBuffered(true);
 	}
 
 	private String getApplicableMode() {
