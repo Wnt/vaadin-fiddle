@@ -2,6 +2,8 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 
@@ -18,38 +20,21 @@ import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.TabSheet;
-import com.vaadin.ui.UI;
 import com.vaadin.ui.TabSheet.Tab;
+import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 import com.vaadin.v7.data.util.FilesystemContainer;
-import com.vaadin.v7.data.util.TextFileProperty;
-import com.vaadin.v7.ui.TextArea;
 import com.vaadin.v7.ui.Tree;
 
 public class ContainerView extends CustomComponent implements View {
-
-	private final class FileEditor extends TextArea {
-		final private File file;
-
-		public FileEditor(File file) {
-			this.file = file;
-			TextFileProperty tf = new TextFileProperty(file);
-			setPropertyDataSource(tf);
-			setBuffered(true);
-			addStyleName("file-editor");
-		}
-
-		public File getFile() {
-			return file;
-		}
-	}
 
 	private TabSheet editorTabs;
 	private FiddleContainer fiddleContainer;
 	private Window fiddleWindow;
 	private HorizontalLayout toolbar;
 	private String dockerId;
+	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -88,10 +73,11 @@ public class ContainerView extends CustomComponent implements View {
 		editorTabs = new TabSheet();
 
 		// TODO use closehandler that checks for unsaved modifications
-		// editorTabs.setCloseHandler((tabsheet, tabContent) -> {
-		//
-		//
-		// });
+		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
+			FileEditor e = (FileEditor) tabContent;
+			fileToEditorMap.remove(e.getFile());
+			editorTabs.removeComponent(e);
+		});
 		editorSplit.setSecondComponent(editorTabs);
 		editorTabs.setSizeFull();
 
@@ -101,8 +87,17 @@ public class ContainerView extends CustomComponent implements View {
 
 		tree.addValueChangeListener(e -> {
 			File selectedFile = (File) tree.getValue();
+			if (selectedFile == null) {
+				return;
+			}
+			if (fileToEditorMap.get(selectedFile) != null) {
+				editorTabs.setSelectedTab(fileToEditorMap.get(selectedFile));
+				return;
+			}
 			FileEditor fileEditor = new FileEditor(selectedFile);
 			fileEditor.setSizeFull();
+			
+			fileToEditorMap.put(selectedFile, fileEditor);
 
 			String fileName = selectedFile.getName();
 			Tab tab = editorTabs.addTab(fileEditor, fileName);
@@ -134,22 +129,22 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void readContainerInfo() {
-		InspectContainerResponse containerInfo = FiddleUi.getDockerservice().getDockerClient().inspectContainerCmd(dockerId)
-				.exec();
+		InspectContainerResponse containerInfo = FiddleUi.getDockerservice().getDockerClient()
+				.inspectContainerCmd(dockerId).exec();
 		fiddleContainer = new FiddleContainer(containerInfo);
 	}
 
 	private void createFiddleWindow() {
 		String host = Page.getCurrent().getLocation().getHost();
-		BrowserFrame frame = new BrowserFrame("", new ExternalResource(
-				"http://" + host + ":" + fiddleContainer.getFiddlePort()));
+		BrowserFrame frame = new BrowserFrame("",
+				new ExternalResource("http://" + host + ":" + fiddleContainer.getFiddlePort()));
 		frame.setSizeFull();
 		fiddleWindow = new Window("Fiddle app", frame);
 		fiddleWindow.setWidth("800px");
 		fiddleWindow.setHeight("800px");
 		fiddleWindow.setPositionX(Page.getCurrent().getBrowserWindowWidth() - 830);
 		fiddleWindow.setPositionY(30);
-		
+
 		fiddleWindow.setClosable(false);
 
 		UI.getCurrent().addWindow(fiddleWindow);
@@ -159,15 +154,15 @@ public class ContainerView extends CustomComponent implements View {
 		WindowOutput consoleOutput = new WindowOutput();
 		consoleOutput.addJettyStartListener(() -> {
 			editorTabs.getUI().access(new Runnable() {
-				
+
 				@Override
 				public void run() {
 					createFiddleWindow();
-					
+
 				}
 			});
 		});
-		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(),consoleOutput);
+		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput);
 		readContainerInfo();
 		fiddleWindow.close();
 	}

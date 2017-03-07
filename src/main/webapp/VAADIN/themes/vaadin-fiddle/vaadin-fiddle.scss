@@ -46,7 +46,7 @@
       font-family: monospace;
     }
   }
-  .file-editor {
-    overflow-y: auto;
+  .file-editor .CodeMirror {
+    height: 100%;
   }
 }

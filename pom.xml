@@ -22,7 +22,7 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<!-- If there are no local customisations, this can also be "fetch" or 
 			"cdn" -->
-		<vaadin.widgetset.mode>local</vaadin.widgetset.mode>
+		<vaadin.widgetset.mode>fetch</vaadin.widgetset.mode>
 	</properties>
 
 	<repositories>
@@ -81,6 +81,11 @@
 			<groupId>com.github.docker-java</groupId>
 			<artifactId>docker-java</artifactId>
 			<version>3.0.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.vaadin.addon</groupId>
+			<artifactId>v-codemirror</artifactId>
+			<version>0.1</version>
 		</dependency>
 
 	</dependencies>
