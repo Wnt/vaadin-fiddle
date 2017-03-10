@@ -54,7 +54,7 @@ public class FiddleUi extends UI {
 		return dockerService;
 	}
 
-	@WebServlet(urlPatterns = { "/vaadinfiddle/*", "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
+	@WebServlet(urlPatterns = { "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
 	@VaadinServletConfiguration(ui = FiddleUi.class, productionMode = false)
 	public static class VaadinFiddleUiServlet extends VaadinServlet {
 		@Override
