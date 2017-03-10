@@ -16,6 +16,7 @@ import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.UI;
+import com.vaadin.ui.Window;
 
 /**
  * This UI is the application entry point. A UI may either represent a browser
@@ -32,21 +33,28 @@ import com.vaadin.ui.UI;
 public class FiddleUi extends UI {
 
 	final private static DockerService dockerService = new DockerService();
-	
+
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
-		
-		Navigator navi = new Navigator(this,  this);
+
+		Navigator navi = new Navigator(this, this);
 		navi.addView("", ListView.class);
 		navi.addView("container", ContainerView.class);
 
+		navi.addViewChangeListener(e -> {
+
+			for (Window w : UI.getCurrent().getWindows()) {
+				w.close();
+			}
+			return true;
+		});
 	}
-	
+
 	public static DockerService getDockerservice() {
 		return dockerService;
 	}
 
-	@WebServlet(urlPatterns = {"/vaadinfiddle/*", "/*"}, name = "VaadinFiddleUiServlet", asyncSupported = true)
+	@WebServlet(urlPatterns = { "/vaadinfiddle/*", "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
 	@VaadinServletConfiguration(ui = FiddleUi.class, productionMode = false)
 	public static class VaadinFiddleUiServlet extends VaadinServlet {
 		@Override
