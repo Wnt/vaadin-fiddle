@@ -12,6 +12,7 @@ import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
+import com.github.dockerjava.api.command.ListContainersCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
@@ -71,7 +72,7 @@ public class ListView extends CustomComponent implements View {
 
 		dockerService.startContainer(id);
 
-		dockerService.runJetty(id, new WindowOutput());
+		dockerService.runJetty(id);
 
 		refreshList();
 	}
@@ -140,7 +141,9 @@ public class ListView extends CustomComponent implements View {
 	}
 
 	private void refreshList() {
-		List<Container> containerList = dockerClient.listContainersCmd().withStatusFilter("running").exec();
+		ListContainersCmd listCmd = dockerClient.listContainersCmd();
+		ListContainersCmd filteredListCmd = listCmd.withStatusFilter("running");
+		List<Container> containerList = filteredListCmd.exec();
 		grid.setItems(containerList);
 	}
 

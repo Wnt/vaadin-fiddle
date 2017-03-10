@@ -7,6 +7,7 @@ import java.io.OutputStream;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ExecCreateCmd;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
@@ -44,12 +45,35 @@ public class DockerService {
 		dockerClient.startContainerCmd(id).exec();
 	}
 
-	public void runJetty(String id, OutputStream stdout) {
-		ExecCreateCmdResponse cmd = dockerClient.execCreateCmd(id)
-				.withCmd("su", "vaadin", "-c", "cd /webapp/fiddleapp; mvn jetty:run").withAttachStdout(true).exec();
+	public void runJetty(String id) {
+		runJetty(id, null);
+	}
 
-		ExecStartResultCallback start = dockerClient.execStartCmd(cmd.getId()).withDetach(false).withTty(true)
-				.exec(new ExecStartResultCallback(new BufferedOutputStream(stdout), System.err));
+	public void runJetty(String id, OutputStream stdout) {
+		ExecCreateCmdResponse cmd;
+		ExecStartResultCallback resultCallback;
+
+		ExecCreateCmd cmdBuild = dockerClient.execCreateCmd(id).withCmd("su", "vaadin", "-c",
+				"cd /webapp/fiddleapp; mvn jetty:run");
+		if (stdout != null) {
+			cmd = cmdBuild.withAttachStdout(true).exec();
+
+			resultCallback = new ExecStartResultCallback(new BufferedOutputStream(stdout), System.err);
+		}
+		else {
+			cmd = cmdBuild.exec();
+
+			resultCallback = new ExecStartResultCallback();
+		}
+
+		ExecStartResultCallback start = dockerClient
+
+				.execStartCmd(cmd.getId())
+
+				.withDetach(false)
+
+				.withTty(true).exec(resultCallback);
+
 	}
 
 	public void restartJetty(String id, OutputStream os) {
