@@ -140,7 +140,7 @@ public class ContainerView extends CustomComponent implements View {
 				new ExternalResource("http://" + host + ":" + fiddleContainer.getFiddlePort()));
 		frame.setSizeFull();
 		fiddleWindow = new Window("Fiddle app", frame);
-		fiddleWindow.setWidth("800px");
+		fiddleWindow.setWidth("400px");
 		fiddleWindow.setHeight("800px");
 		fiddleWindow.setPositionX(Page.getCurrent().getBrowserWindowWidth() - 830);
 		fiddleWindow.setPositionY(30);
