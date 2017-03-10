@@ -142,7 +142,7 @@ public class ContainerView extends CustomComponent implements View {
 		fiddleWindow = new Window("Fiddle app", frame);
 		fiddleWindow.setWidth("400px");
 		fiddleWindow.setHeight("800px");
-		fiddleWindow.setPositionX(Page.getCurrent().getBrowserWindowWidth() - 830);
+		fiddleWindow.setPositionX(Page.getCurrent().getBrowserWindowWidth() - 430);
 		fiddleWindow.setPositionY(30);
 
 		fiddleWindow.setClosable(false);
