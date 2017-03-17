@@ -19,6 +19,7 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
+import com.vaadin.ui.Notification;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.UI;
@@ -64,6 +65,8 @@ public class ContainerView extends CustomComponent implements View {
 		readContainerInfo();
 		Page.getCurrent().setTitle(fiddleContainer.getName() + " - Container - VaadinFiddle");
 
+		FiddleUi.getDockerservice().setOwner(dockerId, UI.getCurrent());
+
 		File fiddleDirectory = new File(fiddleContainer.getFiddleAppPath());
 
 		FilesystemContainer f = new FilesystemContainer(fiddleDirectory);
@@ -96,7 +99,7 @@ public class ContainerView extends CustomComponent implements View {
 			}
 			FileEditor fileEditor = new FileEditor(selectedFile);
 			fileEditor.setSizeFull();
-			
+
 			fileToEditorMap.put(selectedFile, fileEditor);
 
 			String fileName = selectedFile.getName();
@@ -125,13 +128,16 @@ public class ContainerView extends CustomComponent implements View {
 
 		});
 
-		createFiddleWindow();
+		if (fiddleContainer.isRunning()) {
+			createFiddleWindow();
+		} else {
+			Notification.show("Looks like your fiddle is not currently running. Save to start it",
+					Notification.Type.TRAY_NOTIFICATION);
+		}
 	}
 
 	private void readContainerInfo() {
-		InspectContainerResponse containerInfo = FiddleUi.getDockerservice().getDockerClient()
-				.inspectContainerCmd(dockerId).exec();
-		fiddleContainer = new FiddleContainer(containerInfo);
+		fiddleContainer = FiddleUi.getDockerservice().getFiddleContainerById(dockerId);
 	}
 
 	private void createFiddleWindow() {
@@ -162,9 +168,11 @@ public class ContainerView extends CustomComponent implements View {
 				}
 			});
 		});
-		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput);
+		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
 		readContainerInfo();
-		fiddleWindow.close();
+		for (Window w : UI.getCurrent().getWindows()) {
+			w.close();
+		}
 	}
 
 	private void saveAllFiles() {

@@ -23,7 +23,7 @@ public class FiddleContainer {
 		Container c = null;
 		for (Container container : containerList) {
 			if (getId().equals(container.getId())) {
-				c= container;
+				c = container;
 			}
 		}
 		this.container = c;
@@ -66,6 +66,10 @@ public class FiddleContainer {
 
 	public String getName() {
 		return containerInfo.getName();
+	}
+	
+	public boolean isRunning() {
+		return containerInfo.getState().getRunning();
 	}
 
 }
