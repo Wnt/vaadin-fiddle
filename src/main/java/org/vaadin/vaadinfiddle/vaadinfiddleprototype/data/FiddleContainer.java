@@ -72,4 +72,9 @@ public class FiddleContainer {
 		return containerInfo.getState().getRunning();
 	}
 
+	public boolean isCreated() {
+		String status = containerInfo.getState().getStatus();
+		return status.equals("created");
+	}
+
 }

@@ -42,6 +42,7 @@ public class FiddleUi extends UI {
 		Navigator navi = new Navigator(this, this);
 		navi.addView("", ListView.class);
 		navi.addView("container", ContainerView.class);
+		navi.addView("fork", ForkView.class);
 
 		navi.addViewChangeListener(e -> {
 

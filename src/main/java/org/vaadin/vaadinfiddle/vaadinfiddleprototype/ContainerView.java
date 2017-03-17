@@ -11,6 +11,7 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
+import com.vaadin.server.BrowserWindowOpener;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.FontAwesome;
 import com.vaadin.server.Page;
@@ -62,6 +63,14 @@ public class ContainerView extends CustomComponent implements View {
 			restartJetty();
 		});
 		toolbar.addComponent(saveButton);
+
+		Button forkButton = new Button(FontAwesome.COPY);
+		forkButton.setDescription("Fork");
+
+		BrowserWindowOpener opener = new BrowserWindowOpener("#!fork/" + dockerId);
+		opener.extend(forkButton);
+
+		toolbar.addComponent(forkButton);
 
 		readContainerInfo();
 		Page.getCurrent().setTitle(fiddleContainer.getName() + " - Container - VaadinFiddle");
@@ -131,9 +140,15 @@ public class ContainerView extends CustomComponent implements View {
 
 		if (fiddleContainer.isRunning()) {
 			createFiddleWindow();
+		} else if (fiddleContainer.isCreated()) {
+
+			FiddleUi.getDockerservice().startContainer(dockerId);
+			
+			readContainerInfo();
+
+			FiddleUi.getDockerservice().runJetty(dockerId, createOutputWindow());
 		} else {
-			Notification.show("Looks like your fiddle is not currently running. Save to start it",
-					Notification.Type.TRAY_NOTIFICATION);
+			restartJetty();
 		}
 	}
 
@@ -162,6 +177,12 @@ public class ContainerView extends CustomComponent implements View {
 		for (Window w : windows) {
 			w.close();
 		}
+		WindowOutput consoleOutput = createOutputWindow();
+		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
+		readContainerInfo();
+	}
+
+	private WindowOutput createOutputWindow() {
 		WindowOutput consoleOutput = new WindowOutput();
 		consoleOutput.addJettyStartListener(() -> {
 			editorTabs.getUI().access(new Runnable() {
@@ -173,8 +194,7 @@ public class ContainerView extends CustomComponent implements View {
 				}
 			});
 		});
-		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
-		readContainerInfo();
+		return consoleOutput;
 	}
 
 	private void saveAllFiles() {

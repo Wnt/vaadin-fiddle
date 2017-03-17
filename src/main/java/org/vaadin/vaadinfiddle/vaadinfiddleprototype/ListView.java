@@ -87,21 +87,38 @@ public class ListView extends CustomComponent implements View {
 
 		refreshList();
 
-		grid.addColumn(c -> {
-			return String.join(", ", c.getNames());
-		}).setCaption("Name");
-		grid.addColumn(Container::getImage).setCaption("Image");
-		grid.addColumn(Container::getStatus).setCaption("Status");
-		grid.addColumn(c -> {
-			ContainerPort[] ports = c.getPorts();
-			ArrayList<String> portStrings = new ArrayList<>();
-			for (ContainerPort p : ports) {
-				portStrings.add(p.getIp() + ":" + p.getPublicPort() + " -> " + p.getPrivatePort() + "/" + p.getType());
-			}
-			return String.join("", portStrings);
-			// return StringUtils.join(portStrings, ", ");
-		}).setCaption("Ports");
+		createColumnName();
+		createColumnImage();
+		createColumnnStatus();
+		createColumnPorts();
 
+		createColumnIp();
+
+		createColumnTools();
+
+		createColumnCommand();
+		createColumnDatadir();
+	}
+
+	private void createColumnDatadir() {
+		grid.addColumn(c -> {
+			return FiddleUi.getDockerservice().getDatadirById(c.getId());
+		}).setCaption("Datadir");
+	}
+
+	private void createColumnCommand() {
+		grid.addColumn(Container::getCommand).setCaption("Command");
+	}
+
+	private void createColumnTools() {
+		grid.addColumn(((ValueProvider<Container, String>) c -> {
+			String containerPage = "#!container/" + c.getId();
+			return "<a href=\"" + containerPage + "\" title=\"Inspect container\">"
+					+ VaadinIcons.EXTERNAL_LINK.getHtml() + "</a>";
+		}), new HtmlRenderer()).setCaption("Tools");
+	}
+
+	private void createColumnIp() {
 		grid.addColumn(c -> {
 			ContainerNetworkSettings networkSettings = c.getNetworkSettings();
 			Map<String, ContainerNetwork> networks = networkSettings.getNetworks();
@@ -116,28 +133,32 @@ public class ListView extends CustomComponent implements View {
 			return String.join(",", ips);
 
 		}).setCaption("IP");
+	}
 
-		grid.addColumn(((ValueProvider<Container, String>) c -> {
-			String containerPage = "#!container/" + c.getId();
-			return "<a href=\"" + containerPage + "\" title=\"Inspect container\">"
-					+ VaadinIcons.EXTERNAL_LINK.getHtml() + "</a>";
-		}), new HtmlRenderer()).setCaption("Tools");
-
-		grid.addColumn(Container::getCommand).setCaption("Command");
+	private void createColumnPorts() {
 		grid.addColumn(c -> {
-			ContainerNetworkSettings networkSettings = c.getNetworkSettings();
-
-			InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(c.getId()).exec();
-
-			for (Mount mount : containerInfo.getMounts()) {
-				String target = mount.getDestination().getPath();
-				if ("/webapp/fiddleapp".equals(target)) {
-					return mount.getSource();
-				}
-
+			ContainerPort[] ports = c.getPorts();
+			ArrayList<String> portStrings = new ArrayList<>();
+			for (ContainerPort p : ports) {
+				portStrings.add(p.getIp() + ":" + p.getPublicPort() + " -> " + p.getPrivatePort() + "/" + p.getType());
 			}
-			return "";
-		}).setCaption("Datadir");
+			return String.join("", portStrings);
+			// return StringUtils.join(portStrings, ", ");
+		}).setCaption("Ports");
+	}
+
+	private void createColumnnStatus() {
+		grid.addColumn(Container::getStatus).setCaption("Status");
+	}
+
+	private void createColumnImage() {
+		grid.addColumn(Container::getImage).setCaption("Image");
+	}
+
+	private void createColumnName() {
+		grid.addColumn(c -> {
+			return String.join(", ", c.getNames());
+		}).setCaption("Name");
 	}
 
 	private void refreshList() {

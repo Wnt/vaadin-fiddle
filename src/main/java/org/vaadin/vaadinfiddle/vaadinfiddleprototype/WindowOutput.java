@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.vaadin.server.Page;
 import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
@@ -25,12 +26,15 @@ public class WindowOutput extends OutputStream {
 		scroller.setSizeFull();
 		window = new Window("Start output", scroller);
 		window.setWidth("500px");
-		window.setHeight("500px");
+		window.setHeight("250px");
 		
 		consoleOutput.setWidth("100%");
 		consoleOutput.addStyleName("console-msg-container");
 
 		UI.getCurrent().addWindow(window);
+
+		window.setPositionX(30);
+		window.setPositionY(Page.getCurrent().getBrowserWindowHeight() - 250 - 30);
 		
 		window.addStyleName("console-output-window");
 

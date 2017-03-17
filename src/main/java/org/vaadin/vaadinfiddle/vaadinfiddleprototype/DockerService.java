@@ -1,20 +1,27 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.io.FileUtils;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.ExecCreateCmd;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
+import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
+import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports.Binding;
@@ -45,12 +52,56 @@ public class DockerService {
 	}
 
 	CreateContainerResponse createFiddleContainer() {
+		CreateContainerCmd containerStub = createContainerStub();
+
+		Volume volume = new Volume("/webapp/fiddleapp");
+		CreateContainerResponse container = containerStub
+
+				.withVolumes(volume)
+
+				.exec();
+		return container;
+	}
+
+	private CreateContainerCmd createContainerStub() {
 		ExposedPort exposedPort = new ExposedPort(8080);
 		PortBinding portBinding = new PortBinding(new Binding(null, null), exposedPort);
+		return dockerClient
+
+				.createContainerCmd("vaadin-stub")
+
+				.withCmd("bash")
+
+				.withTty(true)
+
+				.withPortBindings(portBinding)
+
+				.withExposedPorts(exposedPort);
+	}
+
+	public String cloneContainer(String id) {
+		CreateContainerCmd containerStub = createContainerStub();
+		String datadir = getDatadirById(id);
+
+		String datadirClone = "/tmp/fiddle_" + UUID.randomUUID();
+
+		File source = new File(datadir);
+		File dest = new File(datadirClone);
+		try {
+			FileUtils.copyDirectory(source, dest);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		Volume volume = new Volume("/webapp/fiddleapp");
-		CreateContainerResponse container = dockerClient.createContainerCmd("vaadin-stub").withVolumes(volume)
-				.withCmd("bash").withTty(true).withPortBindings(portBinding).withExposedPorts(exposedPort).exec();
-		return container;
+		Bind volumeBind = new Bind(datadirClone, volume);
+
+		CreateContainerResponse container = containerStub
+
+				.withBinds(volumeBind)
+
+				.exec();
+		return container.getId();
 	}
 
 	public void startContainer(String id) {
@@ -135,6 +186,19 @@ public class DockerService {
 	public FiddleContainer getFiddleContainerById(String id) {
 		InspectContainerResponse containerInfo = getContainerInfoById(id);
 		return new FiddleContainer(containerInfo);
+	}
+
+	public String getDatadirById(String id) {
+		InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
+
+		for (Mount mount : containerInfo.getMounts()) {
+			String target = mount.getDestination().getPath();
+			if ("/webapp/fiddleapp".equals(target)) {
+				return mount.getSource();
+			}
+
+		}
+		return null;
 	}
 
 	private InspectContainerResponse getContainerInfoById(String id) {
