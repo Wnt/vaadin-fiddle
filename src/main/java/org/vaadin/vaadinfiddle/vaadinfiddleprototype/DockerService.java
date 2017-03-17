@@ -117,6 +117,7 @@ public class DockerService {
 			ContainerState state = containerInfo.getState();
 			Boolean running = state.getRunning();
 			if (running) {
+
 				dockerClient.killContainerCmd(leastActiveContainer).exec();
 			}
 
@@ -145,19 +146,21 @@ public class DockerService {
 		ExecCreateCmdResponse cmd;
 		ExecStartResultCallback resultCallback;
 
-		ExecCreateCmd cmdBuild = dockerClient.execCreateCmd(id).withCmd("su", "vaadin", "-c",
+		Builder configBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder();
+		DockerClient throwAwayDockerClient = DockerClientBuilder.getInstance(configBuilder.build()).build();
+
+		ExecCreateCmd cmdBuild = throwAwayDockerClient.execCreateCmd(id).withCmd("su", "vaadin", "-c",
 				"cd /webapp/fiddleapp; mvn jetty:run");
 		if (stdout != null) {
 			cmd = cmdBuild.withAttachStdout(true).exec();
 
-			resultCallback = new ExecStartResultCallback(new BufferedOutputStream(stdout), System.err);
+			resultCallback = new ExecStartResultCallback(stdout, System.err);
 		} else {
 			cmd = cmdBuild.exec();
 
 			resultCallback = new ExecStartResultCallback();
 		}
-
-		ExecStartResultCallback start = dockerClient
+		ExecStartResultCallback start = throwAwayDockerClient
 
 				.execStartCmd(cmd.getId())
 
@@ -173,6 +176,7 @@ public class DockerService {
 		ContainerState state = containerInfo.getState();
 		Boolean running = state.getRunning();
 		ensureCapacity(running ? 0 : 1);
+
 		dockerClient.restartContainerCmd(id).exec();
 		reactivateContainer(id);
 		runJetty(id, os);
@@ -189,6 +193,7 @@ public class DockerService {
 	}
 
 	public String getDatadirById(String id) {
+
 		InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
 
 		for (Mount mount : containerInfo.getMounts()) {
@@ -202,7 +207,7 @@ public class DockerService {
 	}
 
 	private InspectContainerResponse getContainerInfoById(String id) {
-		InspectContainerResponse containerInfo = getDockerClient().inspectContainerCmd(id).exec();
+		InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
 		return containerInfo;
 	}
 }
