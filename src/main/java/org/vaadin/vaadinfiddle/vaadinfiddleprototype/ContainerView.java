@@ -157,6 +157,9 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void restartJetty() {
+		for (Window w : UI.getCurrent().getWindows()) {
+			w.close();
+		}
 		WindowOutput consoleOutput = new WindowOutput();
 		consoleOutput.addJettyStartListener(() -> {
 			editorTabs.getUI().access(new Runnable() {
@@ -170,9 +173,6 @@ public class ContainerView extends CustomComponent implements View {
 		});
 		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
 		readContainerInfo();
-		for (Window w : UI.getCurrent().getWindows()) {
-			w.close();
-		}
 	}
 
 	private void saveAllFiles() {
