@@ -1,5 +1,7 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Properties;
 
 import javax.servlet.annotation.WebServlet;
@@ -43,7 +45,8 @@ public class FiddleUi extends UI {
 
 		navi.addViewChangeListener(e -> {
 
-			for (Window w : UI.getCurrent().getWindows()) {
+			Collection<Window> windows = new ArrayList<>(UI.getCurrent().getWindows());
+			for (Window w : windows) {
 				w.close();
 			}
 			return true;

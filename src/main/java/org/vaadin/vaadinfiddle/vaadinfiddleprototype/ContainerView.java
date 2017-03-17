@@ -1,6 +1,7 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -157,7 +158,8 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void restartJetty() {
-		for (Window w : UI.getCurrent().getWindows()) {
+		Collection<Window> windows = new ArrayList<>(UI.getCurrent().getWindows());
+		for (Window w : windows) {
 			w.close();
 		}
 		WindowOutput consoleOutput = new WindowOutput();
