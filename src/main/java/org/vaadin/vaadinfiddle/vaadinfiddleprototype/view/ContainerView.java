@@ -1,18 +1,19 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.WindowOutput;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.BrowserWindowOpener;
@@ -22,15 +23,16 @@ import com.vaadin.server.Page;
 import com.vaadin.ui.BrowserFrame;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Component;
+import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.CustomComponent;
-import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
-import com.vaadin.ui.Notification;
+import com.vaadin.ui.Layout;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
+import com.vaadin.ui.themes.ValoTheme;
 import com.vaadin.v7.data.util.FilesystemContainer;
 import com.vaadin.v7.ui.Tree;
 
@@ -39,9 +41,9 @@ public class ContainerView extends CustomComponent implements View {
 	private TabSheet editorTabs;
 	private FiddleContainer fiddleContainer;
 	private Window fiddleWindow;
-	private HorizontalLayout toolbar;
 	private String dockerId;
 	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
+	private Tree tree;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -56,7 +58,8 @@ public class ContainerView extends CustomComponent implements View {
 		}
 
 		HorizontalSplitPanel editorSplit = new HorizontalSplitPanel();
-		toolbar = new HorizontalLayout();
+		Layout toolbar = new CssLayout();
+		toolbar.addStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
 		VerticalLayout rootLayout = new VerticalLayout(toolbar, editorSplit);
 		setCompositionRoot(rootLayout);
 		rootLayout.setExpandRatio(editorSplit, 1);
@@ -66,16 +69,16 @@ public class ContainerView extends CustomComponent implements View {
 
 		editorSplit.setSplitPosition(250, Unit.PIXELS);
 
-		Button saveButton = new Button(FontAwesome.SAVE);
-		saveButton.setDescription("Save all");
+		Button saveButton = new Button("Save", FontAwesome.SAVE);
+		saveButton.setDescription("Save all open files");
 		saveButton.addClickListener(e -> {
 			saveAllFiles();
 			restartJetty();
 		});
 		toolbar.addComponent(saveButton);
 
-		Button forkButton = new Button(FontAwesome.COPY);
-		forkButton.setDescription("Fork");
+		Button forkButton = new Button("Fork", FontAwesome.COPY);
+		forkButton.setDescription("Create a fork of the currently saved state");
 
 		BrowserWindowOpener opener = new BrowserWindowOpener("#!fork/" + dockerId);
 		opener.extend(forkButton);
@@ -90,7 +93,7 @@ public class ContainerView extends CustomComponent implements View {
 		File fiddleDirectory = new File(fiddleContainer.getFiddleAppPath());
 
 		FilesystemContainer f = new FilesystemContainer(fiddleDirectory);
-		Tree tree = new Tree("", f);
+		tree = new Tree("", f);
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
 		editorTabs = new TabSheet();
@@ -137,6 +140,8 @@ public class ContainerView extends CustomComponent implements View {
 			editorTabs.setSelectedTab(tab);
 		});
 
+		autoexpandAndSelectFirstJavaFile(fiddleDirectory);
+
 		tree.addExpandListener(e -> {
 			f.getItem(e.getItemId());
 			Collection<File> children = f.getChildren(e.getItemId());
@@ -160,6 +165,48 @@ public class ContainerView extends CustomComponent implements View {
 		} else {
 			restartJetty();
 		}
+	}
+
+	private void autoexpandAndSelectFirstJavaFile(File fiddleDirectory) {
+		File javaFile = findFirstJavaFile(fiddleDirectory);
+		if (javaFile == null) {
+			return;
+		}
+
+		ArrayList<File> pathToJava = new ArrayList<>();
+
+		File fs = javaFile;
+
+		while (!fs.getParentFile().equals(fiddleDirectory)) {
+			pathToJava.add(fs.getParentFile());
+			fs = fs.getParentFile();
+		}
+		for (int i = pathToJava.size() - 1; i >= 0; i--) {
+			tree.expandItem(pathToJava.get(i));
+		}
+
+		tree.setValue(javaFile);
+	}
+
+	private File findFirstJavaFile(File directory) {
+
+		FileFilter fileFilter = new WildcardFileFilter("*.java");
+		File[] files = directory.listFiles(fileFilter);
+
+		if (files.length > 0) {
+			return files[0];
+		} else {
+			for (File file : directory.listFiles()) {
+				if (file.isDirectory()) {
+					File subJava = findFirstJavaFile(file);
+					if (subJava != null) {
+						return subJava;
+					}
+				}
+			}
+		}
+		return null;
+
 	}
 
 	private void readContainerInfo() {
