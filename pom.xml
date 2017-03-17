@@ -157,7 +157,7 @@
 			<!-- Vaadin pre-release repositories -->
 			<id>vaadin-prerelease</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<activeByDefault>false</activeByDefault>
 			</activation>
 
 			<repositories>
