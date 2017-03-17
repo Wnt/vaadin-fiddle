@@ -15,8 +15,10 @@ import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.DeploymentConfiguration;
+import com.vaadin.server.ServiceException;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
+import com.vaadin.server.VaadinServletService;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.Window;
 
@@ -61,10 +63,15 @@ public class FiddleUi extends UI {
 	@WebServlet(urlPatterns = { "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
 	@VaadinServletConfiguration(ui = FiddleUi.class, productionMode = false)
 	public static class VaadinFiddleUiServlet extends VaadinServlet {
+		
 		@Override
-		protected DeploymentConfiguration createDeploymentConfiguration(Properties initParameters) {
-			// TODO Auto-generated method stub
-			return super.createDeploymentConfiguration(initParameters);
+		protected VaadinServletService createServletService(DeploymentConfiguration deploymentConfiguration)
+				throws ServiceException {
+
+			VaadinServletService service = new FiddleServletService(this, deploymentConfiguration);
+			service.init();
+			return service;
+
 		}
 	}
 }

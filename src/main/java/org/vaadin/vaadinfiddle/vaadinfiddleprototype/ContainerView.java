@@ -45,6 +45,12 @@ public class ContainerView extends CustomComponent implements View {
 		setSizeFull();
 
 		dockerId = event.getParameters();
+
+		if (!FiddleSession.getCurrent().ownsContainer(dockerId)) {
+			UI.getCurrent().getNavigator().navigateTo("fork/" + dockerId);
+			return;
+		}
+
 		HorizontalSplitPanel editorSplit = new HorizontalSplitPanel();
 		toolbar = new HorizontalLayout();
 		VerticalLayout rootLayout = new VerticalLayout(toolbar, editorSplit);
@@ -143,7 +149,7 @@ public class ContainerView extends CustomComponent implements View {
 		} else if (fiddleContainer.isCreated()) {
 
 			FiddleUi.getDockerservice().startContainer(dockerId);
-			
+
 			readContainerInfo();
 
 			FiddleUi.getDockerservice().runJetty(dockerId, createOutputWindow());

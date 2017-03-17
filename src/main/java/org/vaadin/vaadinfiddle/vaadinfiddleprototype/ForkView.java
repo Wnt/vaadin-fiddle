@@ -13,6 +13,7 @@ public class ForkView extends CustomComponent implements View {
 		String id = event.getParameters();
 		
 		String cloneId = FiddleUi.getDockerservice().cloneContainer(id);
+		FiddleSession.getCurrent().addOwnedContainer(cloneId);
 		
 		UI.getCurrent().getNavigator().navigateTo("container/"+cloneId);
 
