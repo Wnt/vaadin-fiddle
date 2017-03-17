@@ -42,7 +42,8 @@ public class FiddleUi extends UI {
 	protected void init(VaadinRequest vaadinRequest) {
 
 		Navigator navi = new Navigator(this, this);
-		navi.addView("", ListView.class);
+		navi.addView("", CreatorView.class);
+		navi.addView("list", ListView.class);
 		navi.addView("container", ContainerView.class);
 		navi.addView("fork", ForkView.class);
 

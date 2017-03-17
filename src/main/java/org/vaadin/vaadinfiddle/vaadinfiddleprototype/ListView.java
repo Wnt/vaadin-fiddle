@@ -70,10 +70,6 @@ public class ListView extends CustomComponent implements View {
 		CreateContainerResponse container = dockerService.createFiddleContainer();
 		String id = container.getId();
 
-		dockerService.startContainer(id);
-
-		dockerService.runJetty(id);
-
 		refreshList();
 	}
 
