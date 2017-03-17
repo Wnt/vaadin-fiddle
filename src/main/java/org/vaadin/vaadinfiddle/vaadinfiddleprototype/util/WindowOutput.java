@@ -1,4 +1,4 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.util;
 
 import java.io.IOException;
 import java.io.OutputStream;

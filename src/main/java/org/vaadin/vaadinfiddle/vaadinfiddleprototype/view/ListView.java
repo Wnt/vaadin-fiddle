@@ -1,4 +1,4 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -6,6 +6,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.DockerService;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;

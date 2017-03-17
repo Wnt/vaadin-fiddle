@@ -1,4 +1,4 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.component;
 
 import java.io.File;
 import java.util.ArrayList;

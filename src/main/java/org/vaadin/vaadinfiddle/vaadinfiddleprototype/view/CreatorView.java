@@ -1,4 +1,6 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
+
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.vaadin.navigator.View;

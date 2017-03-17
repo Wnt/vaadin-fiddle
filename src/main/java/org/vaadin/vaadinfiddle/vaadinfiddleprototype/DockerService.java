@@ -51,7 +51,7 @@ public class DockerService {
 		return dockerClient;
 	}
 
-	CreateContainerResponse createFiddleContainer() {
+	public CreateContainerResponse createFiddleContainer() {
 		CreateContainerCmd containerStub = createContainerStub();
 
 		Volume volume = new Volume("/webapp/fiddleapp");

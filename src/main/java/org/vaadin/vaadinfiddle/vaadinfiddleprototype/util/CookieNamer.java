@@ -1,4 +1,4 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.util;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;

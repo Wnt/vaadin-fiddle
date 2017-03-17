@@ -6,6 +6,11 @@ import java.util.Properties;
 
 import javax.servlet.annotation.WebServlet;
 
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ContainerView;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.CreatorView;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ForkView;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ListView;
+
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;

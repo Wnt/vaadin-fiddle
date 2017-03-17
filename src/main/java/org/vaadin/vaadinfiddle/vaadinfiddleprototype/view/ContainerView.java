@@ -1,4 +1,4 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -6,7 +6,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.WindowOutput;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.vaadin.navigator.View;

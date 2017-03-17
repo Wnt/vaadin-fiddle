@@ -1,4 +1,7 @@
-package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
+package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
+
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
