@@ -1,6 +1,5 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
@@ -24,6 +23,7 @@ public class FiddleContainer {
 		for (Container container : containerList) {
 			if (getId().equals(container.getId())) {
 				c = container;
+				break;
 			}
 		}
 		this.container = c;
@@ -47,7 +47,6 @@ public class FiddleContainer {
 
 	public int getFiddlePort() {
 		ContainerPort[] ports = getContainer().getPorts();
-		ArrayList<String> portStrings = new ArrayList<>();
 		for (ContainerPort p : ports) {
 			if (p.getPrivatePort() == 8080) {
 				return p.getPublicPort();
@@ -75,6 +74,16 @@ public class FiddleContainer {
 	public boolean isCreated() {
 		String status = containerInfo.getState().getStatus();
 		return status.equals("created");
+	}
+	
+	public static int getFiddlePort(Container container) {
+		ContainerPort[] ports = container.getPorts();
+		for (ContainerPort p : ports) {
+			if (p.getPrivatePort() == 8080) {
+				return p.getPublicPort();
+			}
+		}
+		return -1;
 	}
 
 }

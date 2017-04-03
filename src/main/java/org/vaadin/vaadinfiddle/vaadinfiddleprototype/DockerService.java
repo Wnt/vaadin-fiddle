@@ -1,9 +1,13 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +25,7 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
+import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
@@ -108,6 +113,57 @@ public class DockerService {
 		ensureCapacity(1);
 		dockerClient.startContainerCmd(id).exec();
 		runningContainers.add(id);
+		
+		
+		Container container = null;
+
+		List<Container> containerList = dockerClient.listContainersCmd().withStatusFilter("running").exec();
+		for (Container c : containerList) {
+			if (id.equals(c.getId())) {
+				container = c;
+				break;
+			}
+		}
+		
+		int port = FiddleContainer.getFiddlePort(container);
+
+		Path file = Paths.get("/etc/nginx/fiddle-config/container-conf.d/" + id + ".conf");
+		try {
+			List<String> lines = Arrays.asList(
+
+					"location /container/" + id + "/PUSH {",
+
+					"  proxy_pass http://localhost:" + port + "/PUSH;",
+
+					"  proxy_http_version 1.1;",
+
+					"  proxy_set_header Upgrade $http_upgrade;",
+
+					"  proxy_set_header Connection \"upgrade\";",
+
+					"}",
+
+					"location /container/" + id + "/ {",
+
+					"  proxy_pass http://127.0.0.1:" + port + "/;",
+
+					"  proxy_redirect default;",
+
+					"}"
+
+			);
+			Files.write(file, lines, Charset.forName("UTF-8"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// add following line to /etc/sudoers:
+		// %docker ALL=NOPASSWD: /bin/systemctl reload nginx.service
+
+		// TODO exec:
+		// sudo systemctl reload nginx.service
+		
 	}
 
 	private void ensureCapacity(int additionalContainers) {
