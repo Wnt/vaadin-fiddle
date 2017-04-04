@@ -12,6 +12,7 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.PanelOutput;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.WindowOutput;
 
 import com.vaadin.navigator.View;
@@ -33,10 +34,12 @@ import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.VerticalSplitPanel;
 import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 import com.vaadin.v7.data.util.FilesystemContainer;
@@ -50,6 +53,7 @@ public class ContainerView extends CustomComponent implements View {
 	private String dockerId;
 	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
 	private Tree tree;
+	private VerticalSplitPanel editorTabsAndConsole;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -118,6 +122,10 @@ public class ContainerView extends CustomComponent implements View {
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
 		editorTabs = new TabSheet();
+		editorTabsAndConsole = new VerticalSplitPanel(editorTabs, null);
+		editorSplit.setSecondComponent(editorTabsAndConsole);
+		editorTabsAndConsole.setSizeFull();
+		editorTabsAndConsole.setSplitPosition(100, Unit.PERCENTAGE);
 
 		// TODO use closehandler that checks for unsaved modifications
 		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
@@ -125,7 +133,6 @@ public class ContainerView extends CustomComponent implements View {
 			fileToEditorMap.remove(e.getFile());
 			editorTabs.removeComponent(e);
 		});
-		editorSplit.setSecondComponent(editorTabs);
 		editorTabs.setSizeFull();
 
 		Collection<String> containerPropertyIds = f.getContainerPropertyIds();
@@ -182,7 +189,7 @@ public class ContainerView extends CustomComponent implements View {
 
 			readContainerInfo();
 
-			FiddleUi.getDockerservice().runJetty(dockerId, createOutputWindow());
+			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel());
 		} else {
 			restartJetty();
 		}
@@ -255,13 +262,13 @@ public class ContainerView extends CustomComponent implements View {
 		for (Window w : windows) {
 			w.close();
 		}
-		WindowOutput consoleOutput = createOutputWindow();
+		PanelOutput consoleOutput = createConsolePanel();
 		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
 		readContainerInfo();
 	}
 
-	private WindowOutput createOutputWindow() {
-		WindowOutput consoleOutput = new WindowOutput();
+	private PanelOutput createConsolePanel() {
+		PanelOutput consoleOutput = new PanelOutput();
 		consoleOutput.addJettyStartListener(() -> {
 			editorTabs.getUI().access(new Runnable() {
 
@@ -272,6 +279,18 @@ public class ContainerView extends CustomComponent implements View {
 				}
 			});
 		});
+		consoleOutput.addFirstLineReceivedListener(()->{
+			editorTabs.getUI().access(new Runnable() {
+
+				@Override
+				public void run() {
+					editorTabsAndConsole.setSplitPosition(200, Unit.PIXELS, true);
+				}
+			});
+		});
+		Panel consolePanel = consoleOutput.getOutputPanel();
+		consolePanel.setCaption("Console");
+		editorTabsAndConsole.setSecondComponent(consolePanel);
 		return consoleOutput;
 	}
 

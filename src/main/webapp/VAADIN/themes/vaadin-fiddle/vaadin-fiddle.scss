@@ -35,7 +35,7 @@
   @include valo;
 
   // Insert your own theme rules here
-  .console-output-window .v-window-contents .console-msg-container {
+  .console-msg-container {
     line-height: 12px;
     
     .v-label {
