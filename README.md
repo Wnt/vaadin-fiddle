@@ -4,7 +4,8 @@ vaadinfiddleprototype
 ## Development environment setup instructions
 assuming Ubuntu 16.04 based system
 
-Install Docker CE. Installation instructions at https://docs.docker.com/engine/installation/linux/ubuntu/
+### Install Docker CE
+Full installation instructions at https://docs.docker.com/engine/installation/linux/ubuntu/
 
 e.g.
 ```
@@ -20,7 +21,7 @@ sudo usermod --append --groups docker <your unix user name>
 ```
 and re-login.
 
-Install project prerequisites:
+### Install project prerequisites:
 ```
 sudo apt install maven git nginx-light
 ```
@@ -30,12 +31,14 @@ sudo chown root:docker /var/lib/docker
 sudo chown root:docker /var/lib/docker/volumes
 sudo chmod 750 /var/lib/docker/volumes
 ```
+### Build stub project Docker image
 Checkout and build the stub project:
 ```
 git clone https://github.com/Wnt/vaadin-fiddle-stub-project.git
 cd vaadin-fiddle-stub-project
 docker build --tag vaadin-stub .
 ```
+### Configure nginx
 To allow nginx configuration reloading following line to `/etc/sudoers`:
 ```
 %docker ALL=NOPASSWD: /bin/systemctl reload nginx.service
@@ -64,6 +67,7 @@ location / {
 
 include fiddle-config/fiddle-host.conf;
 ```
+### Build and run
 then finally check out and run this project:
 ```
 git clone https://github.com/Wnt/vaadin-fiddle.git
