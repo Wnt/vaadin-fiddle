@@ -2,7 +2,6 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Properties;
 
 import javax.servlet.annotation.WebServlet;
 
@@ -16,9 +15,6 @@ import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.annotations.Widgetset;
 import com.vaadin.navigator.Navigator;
-import com.vaadin.navigator.View;
-import com.vaadin.navigator.ViewChangeListener;
-import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.ServiceException;
 import com.vaadin.server.VaadinRequest;

@@ -22,11 +22,12 @@ and re-login.
 
 Install project prerequisites:
 ```
-sudo apt install maven git
+sudo apt install maven git nginx-light
 ```
 Change docker directory permissions so that your user has access to the volumes:
 ```
 sudo chown root:docker /var/lib/docker
+sudo chown root:docker /var/lib/docker/volumes
 sudo chmod 750 /var/lib/docker/volumes
 ```
 Checkout and build the stub project:
@@ -34,6 +35,32 @@ Checkout and build the stub project:
 git clone https://github.com/Wnt/vaadin-fiddle-stub-project.git
 cd vaadin-fiddle-stub-project
 docker build --tag vaadin-stub .
+```
+To allow nginx configuration reloading following line to `/etc/sudoers`:
+```
+%docker ALL=NOPASSWD: /bin/systemctl reload nginx.service
+```
+Create a directory to host the nginx VaadinFiddle configuration
+```
+sudo mkdir /etc/nginx/fiddle-config
+sudo chown root:docker /etc/nginx/fiddle-config
+sudo chmod 775 /etc/nginx/fiddle-config
+```
+and checkout the stub configuration in to there:
+```
+git clone https://github.com/Wnt/nginx-fiddle-config.git /etc/nginx/fiddle-config
+```
+and include the VaadinFiddle configuration in the nginx configuration, e.g. add
+``` 
+include fiddle-config/fiddle-host.conf:
+```
+in to `/etc/nginx/sites-available/default` after this block:
+```
+location / {
+        # First attempt to serve request as file, then
+        # as directory, then fall back to displaying a 404.
+        try_files $uri $uri/ =404;
+}
 ```
 then finally check out and run this project:
 ```
@@ -49,5 +76,6 @@ mvn jetty:run
 
 ```
 sudo chown root:docker /var/lib/docker
+sudo chown root:docker /var/lib/docker/volumes
 sudo chmod 750 /var/lib/docker/volumes
 ```

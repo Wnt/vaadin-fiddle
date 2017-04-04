@@ -25,8 +25,8 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
-import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports.Binding;
@@ -115,6 +115,11 @@ public class DockerService {
 		runningContainers.add(id);
 		
 		
+		configureProxy(id);
+		
+	}
+
+	private void configureProxy(String id) {
 		Container container = null;
 
 		List<Container> containerList = dockerClient.listContainersCmd().withStatusFilter("running").exec();
@@ -127,7 +132,8 @@ public class DockerService {
 		
 		int port = FiddleContainer.getFiddlePort(container);
 
-		Path file = Paths.get("/etc/nginx/fiddle-config/container-conf.d/" + id + ".conf");
+		String proxyConfigPath = "/etc/nginx/fiddle-config/container-conf.d/" + id + ".conf";
+		Path file = Paths.get(proxyConfigPath);
 		try {
 			List<String> lines = Arrays.asList(
 
@@ -149,6 +155,8 @@ public class DockerService {
 
 					"  proxy_redirect default;",
 
+					"  proxy_cookie_path / /container/" + id + "/;",
+
 					"}"
 
 			);
@@ -161,9 +169,14 @@ public class DockerService {
 		// add following line to /etc/sudoers:
 		// %docker ALL=NOPASSWD: /bin/systemctl reload nginx.service
 
-		// TODO exec:
-		// sudo systemctl reload nginx.service
-		
+		Runtime rt = Runtime.getRuntime();
+		try {
+			Process pr = rt.exec("sudo systemctl reload nginx.service");
+			int retVal = pr.waitFor();
+		} catch (IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void ensureCapacity(int additionalContainers) {
@@ -237,6 +250,8 @@ public class DockerService {
 		reactivateContainer(id);
 		runJetty(id, os);
 		setOwner(id, owner);
+		
+		configureProxy(id);
 	}
 
 	public void setOwner(String id, UI owner) {
