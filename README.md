@@ -70,7 +70,8 @@ git clone https://github.com/Wnt/vaadin-fiddle.git
 cd vaadin-fiddle
 mvn jetty:run
 ```
-
+then you can access the VaadinFiddle ui on your localhost at:
+http://localhost/editor/
 ## Common problems:
 - Empty file list in container view
 
