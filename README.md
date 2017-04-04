@@ -50,17 +50,19 @@ and checkout the stub configuration in to there:
 ```
 git clone https://github.com/Wnt/nginx-fiddle-config.git /etc/nginx/fiddle-config
 ```
-and include the VaadinFiddle configuration in the nginx configuration, e.g. add
+and include the VaadinFiddle configuration in the nginx configuration
 ``` 
-include fiddle-config/fiddle-host.conf:
+include fiddle-config/fiddle-host.conf;
 ```
-in to `/etc/nginx/sites-available/default` after this block:
+e.g. in to `/etc/nginx/sites-available/default` after this block:
 ```
 location / {
         # First attempt to serve request as file, then
         # as directory, then fall back to displaying a 404.
         try_files $uri $uri/ =404;
 }
+
+include fiddle-config/fiddle-host.conf;
 ```
 then finally check out and run this project:
 ```
