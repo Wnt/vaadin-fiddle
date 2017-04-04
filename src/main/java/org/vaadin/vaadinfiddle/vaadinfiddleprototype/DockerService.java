@@ -147,6 +147,8 @@ public class DockerService {
 
 					"  proxy_set_header Connection \"upgrade\";",
 
+					"  proxy_read_timeout 15m;",
+
 					"}",
 
 					"location /container/" + id + "/ {",
@@ -156,6 +158,8 @@ public class DockerService {
 					"  proxy_redirect default;",
 
 					"  proxy_cookie_path / /container/" + id + "/;",
+
+					"  proxy_read_timeout 15m;",
 
 					"}"
 
