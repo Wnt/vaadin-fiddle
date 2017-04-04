@@ -54,6 +54,7 @@ public class ContainerView extends CustomComponent implements View {
 	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
 	private Tree tree;
 	private VerticalSplitPanel editorTabsAndConsole;
+	private HorizontalSplitPanel mainAreaAndFiddleResult;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -125,7 +126,10 @@ public class ContainerView extends CustomComponent implements View {
 		tree.setSizeFull();
 		editorTabs = new TabSheet();
 		editorTabsAndConsole = new VerticalSplitPanel(editorTabs, null);
-		editorSplit.setSecondComponent(editorTabsAndConsole);
+		editorTabsAndConsole.setSizeFull();
+		mainAreaAndFiddleResult = new HorizontalSplitPanel(editorTabsAndConsole, null);
+		mainAreaAndFiddleResult.setSplitPosition(100, Unit.PERCENTAGE);
+		editorSplit.setSecondComponent(mainAreaAndFiddleResult);
 		editorTabsAndConsole.setSizeFull();
 		editorTabsAndConsole.setSplitPosition(100, Unit.PERCENTAGE);
 		editorTabsAndConsole.addStyleName("editor-tabs-and-console");
@@ -185,7 +189,7 @@ public class ContainerView extends CustomComponent implements View {
 		});
 
 		if (fiddleContainer.isRunning()) {
-			createFiddleWindow();
+			createResultFrame();
 		} else if (fiddleContainer.isCreated()) {
 
 			FiddleUi.getDockerservice().startContainer(dockerId);
@@ -244,20 +248,19 @@ public class ContainerView extends CustomComponent implements View {
 		fiddleContainer = FiddleUi.getDockerservice().getFiddleContainerById(dockerId);
 	}
 
-	private void createFiddleWindow() {
+	private void createResultFrame() {
 		String host = Page.getCurrent().getLocation().getHost();
 		BrowserFrame frame = new BrowserFrame("",
 				new ExternalResource("http://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
-		fiddleWindow = new Window("Fiddle app", frame);
-		fiddleWindow.setWidth("400px");
-		fiddleWindow.setHeight("500px");
-		fiddleWindow.setPositionX(Page.getCurrent().getBrowserWindowWidth() - 430);
-		fiddleWindow.setPositionY(Page.getCurrent().getBrowserWindowHeight() - 530);
-
-		fiddleWindow.setClosable(false);
-
-		UI.getCurrent().addWindow(fiddleWindow);
+		
+		Panel resultPanel = new Panel("Fiddle result app", frame);
+		frame.setSizeFull();
+		resultPanel.setSizeFull();
+		mainAreaAndFiddleResult.setSecondComponent(resultPanel);
+		
+		mainAreaAndFiddleResult.setSplitPosition(50, Unit.PERCENTAGE, true);
+		
 	}
 
 	private void restartJetty() {
@@ -265,6 +268,10 @@ public class ContainerView extends CustomComponent implements View {
 		for (Window w : windows) {
 			w.close();
 		}
+		
+		mainAreaAndFiddleResult.setSecondComponent(null);
+		mainAreaAndFiddleResult.setSplitPosition(100, Unit.PERCENTAGE);
+		
 		PanelOutput consoleOutput = createConsolePanel();
 		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
 		readContainerInfo();
@@ -277,7 +284,7 @@ public class ContainerView extends CustomComponent implements View {
 
 				@Override
 				public void run() {
-					createFiddleWindow();
+					createResultFrame();
 
 				}
 			});
