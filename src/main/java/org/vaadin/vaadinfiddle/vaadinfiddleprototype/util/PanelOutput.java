@@ -17,15 +17,17 @@ public class PanelOutput extends OutputStream {
 	private Layout consoleOutput;
 	private StringBuilder row = new StringBuilder();
 	private List<JettyStartListener> jettyStartListeners = new ArrayList<>();
+	private List<ErrorListener> errorListeners = new ArrayList<>();
 	private List<FirstMessageReceivedListener> firstMessageReceivedListeners = new ArrayList<>();
 	private final Panel outputPanel;
 	private boolean firstMessageReceived = false;
+	private boolean errorNotificationSent = false;
 
 	public PanelOutput() {
 		consoleOutput = new CssLayout();
 		outputPanel = new Panel(consoleOutput);
 		getOutputPanel().setSizeFull();
-		
+
 		consoleOutput.setWidth("100%");
 		consoleOutput.addStyleName("console-msg-container");
 
@@ -42,6 +44,13 @@ public class PanelOutput extends OutputStream {
 			if (str.contains("[INFO] Started Jetty Server")) {
 				for (JettyStartListener l : jettyStartListeners) {
 					l.jettyStarted();
+				}
+			} else if (str.contains("[ERROR]")) {
+				if (!errorNotificationSent) {
+					errorNotificationSent = true;
+					for (ErrorListener l : errorListeners) {
+						l.errorOccurred();
+					}
 				}
 			}
 			row = new StringBuilder();
@@ -64,17 +73,27 @@ public class PanelOutput extends OutputStream {
 			}
 		}
 	}
-	public void addJettyStartListener(JettyStartListener l ) {
+
+	public void addJettyStartListener(JettyStartListener l) {
 		jettyStartListeners.add(l);
 	}
-	
+
 	public Panel getOutputPanel() {
 		return outputPanel;
 	}
 
 	public void addFirstLineReceivedListener(FirstMessageReceivedListener l) {
 		firstMessageReceivedListeners.add(l);
-		
+
+	}
+
+	public void addErrorListener(ErrorListener l) {
+		errorListeners.add(l);
+
+	}
+
+	public interface ErrorListener {
+		void errorOccurred();
 	}
 
 	public interface JettyStartListener {

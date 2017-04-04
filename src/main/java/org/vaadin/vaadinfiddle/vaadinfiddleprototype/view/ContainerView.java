@@ -13,8 +13,9 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.PanelOutput;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.WindowOutput;
 
+import com.vaadin.event.ShortcutAction.KeyCode;
+import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.BrowserWindowOpener;
@@ -34,6 +35,8 @@ import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
+import com.vaadin.ui.Notification;
+import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
@@ -55,12 +58,13 @@ public class ContainerView extends CustomComponent implements View {
 	private Tree tree;
 	private VerticalSplitPanel editorTabsAndConsole;
 	private HorizontalSplitPanel mainAreaAndFiddleResult;
+	private boolean startedMessageShown = false;
 
 	@SuppressWarnings("deprecation")
 	@Override
 	public void enter(ViewChangeEvent event) {
 		setSizeFull();
-		
+
 		addStyleName("container-view");
 
 		dockerId = event.getParameters();
@@ -98,12 +102,18 @@ public class ContainerView extends CustomComponent implements View {
 		editorSplit.setSplitPosition(250, Unit.PIXELS);
 
 		Button saveButton = new Button("Save", FontAwesome.SAVE);
-		saveButton.setDescription("Save all open files");
+		saveButton.setDescription("Save all open files (Ctrl + S)");
 		saveButton.addClickListener(e -> {
 			saveAllFiles();
 			restartJetty();
+
+			Notification notification = new Notification("Saving and restarting",
+					"This shouldn't take longer than a few seconds", Type.TRAY_NOTIFICATION);
+			notification.setDelayMsec(1000);
+			notification.show(Page.getCurrent());
 		});
 		toolbar.addComponent(saveButton);
+		saveButton.setClickShortcut(KeyCode.S, ModifierKey.CTRL);
 
 		Button forkButton = new Button("Fork", FontAwesome.COPY);
 		forkButton.setDescription("Create a fork of the currently saved state");
@@ -188,8 +198,12 @@ public class ContainerView extends CustomComponent implements View {
 
 		});
 
+		Notification startupNotification;
 		if (fiddleContainer.isRunning()) {
 			createResultFrame();
+			startupNotification = new Notification("Console hidden",
+					"This fiddle was already running when you got here. If you want to see the console messages just hit save!",
+					Type.TRAY_NOTIFICATION);
 		} else if (fiddleContainer.isCreated()) {
 
 			FiddleUi.getDockerservice().startContainer(dockerId);
@@ -197,9 +211,17 @@ public class ContainerView extends CustomComponent implements View {
 			readContainerInfo();
 
 			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel());
+
+			startupNotification = new Notification("Creating a fork",
+					"Booting up the fiddle fork. This shouldn't longer than a few seconds!", Type.TRAY_NOTIFICATION);
 		} else {
+			startupNotification = new Notification("Waking up",
+					"This fiddle was sleeping when you got here. Starting it up shouldn't longer than few seconds!",
+					Type.TRAY_NOTIFICATION);
 			restartJetty();
 		}
+		startupNotification.setDelayMsec(5000);
+		startupNotification.show(Page.getCurrent());
 	}
 
 	private void autoexpandAndSelectFirstJavaFile(File fiddleDirectory) {
@@ -253,14 +275,14 @@ public class ContainerView extends CustomComponent implements View {
 		BrowserFrame frame = new BrowserFrame("",
 				new ExternalResource("http://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
-		
+
 		Panel resultPanel = new Panel("Fiddle result app", frame);
 		frame.setSizeFull();
 		resultPanel.setSizeFull();
 		mainAreaAndFiddleResult.setSecondComponent(resultPanel);
-		
+
 		mainAreaAndFiddleResult.setSplitPosition(50, Unit.PERCENTAGE, true);
-		
+
 	}
 
 	private void restartJetty() {
@@ -268,10 +290,10 @@ public class ContainerView extends CustomComponent implements View {
 		for (Window w : windows) {
 			w.close();
 		}
-		
+
 		mainAreaAndFiddleResult.setSecondComponent(null);
 		mainAreaAndFiddleResult.setSplitPosition(100, Unit.PERCENTAGE);
-		
+
 		PanelOutput consoleOutput = createConsolePanel();
 		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
 		readContainerInfo();
@@ -280,22 +302,31 @@ public class ContainerView extends CustomComponent implements View {
 	private PanelOutput createConsolePanel() {
 		PanelOutput consoleOutput = new PanelOutput();
 		consoleOutput.addJettyStartListener(() -> {
-			editorTabs.getUI().access(new Runnable() {
+			editorTabs.getUI().access(() -> {
+				createResultFrame();
 
-				@Override
-				public void run() {
-					createResultFrame();
-
+				if (!startedMessageShown) {
+					startedMessageShown = true;
+					Notification notification = new Notification("Fiddle up n running",
+							"Fiddle result is now running in the right panel. Try editing the code and hit save!",
+							Type.TRAY_NOTIFICATION);
+					notification.setDelayMsec(5000);
+					notification.show(Page.getCurrent());
 				}
+
 			});
 		});
-		consoleOutput.addFirstLineReceivedListener(()->{
-			editorTabs.getUI().access(new Runnable() {
+		consoleOutput.addFirstLineReceivedListener(() -> {
+			editorTabs.getUI().access(() -> editorTabsAndConsole.setSplitPosition(200, Unit.PIXELS, true));
+		});
+		consoleOutput.addErrorListener(() -> {
+			editorTabs.getUI().access(() -> {
 
-				@Override
-				public void run() {
-					editorTabsAndConsole.setSplitPosition(200, Unit.PIXELS, true);
-				}
+				Notification notification = new Notification("Error occurred",
+						"Check the console output for more info", Type.WARNING_MESSAGE);
+				notification.setDelayMsec(Notification.DELAY_FOREVER);
+				notification.show(Page.getCurrent());
+
 			});
 		});
 		Panel consolePanel = consoleOutput.getOutputPanel();

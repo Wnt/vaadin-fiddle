@@ -35,8 +35,10 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.vaadin.server.Page;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.UI;
+import com.vaadin.ui.Notification.Type;
 
 public class DockerService {
 
@@ -113,10 +115,9 @@ public class DockerService {
 		ensureCapacity(1);
 		dockerClient.startContainerCmd(id).exec();
 		runningContainers.add(id);
-		
-		
+
 		configureProxy(id);
-		
+
 	}
 
 	private void configureProxy(String id) {
@@ -129,7 +130,7 @@ public class DockerService {
 				break;
 			}
 		}
-		
+
 		int port = FiddleContainer.getFiddlePort(container);
 
 		String proxyConfigPath = "/etc/nginx/fiddle-config/container-conf.d/" + id + ".conf";
@@ -169,7 +170,7 @@ public class DockerService {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		// add following line to /etc/sudoers:
 		// %docker ALL=NOPASSWD: /bin/systemctl reload nginx.service
 
@@ -198,9 +199,12 @@ public class DockerService {
 			UI ownerUi = containerOwnerUis.get(leastActiveContainer);
 			if (ownerUi != null && ownerUi.isAttached()) {
 				ownerUi.access(() -> {
-					Notification.show(
-							"'" + containerInfo.getName() + "' was stopped due to inactivity. Save to restart it.",
-							Notification.Type.WARNING_MESSAGE);
+
+					Notification notification = new Notification("Fiddle stopped",
+							"This fiddle was stopped as someone else needed the server resources for their fiddle. Just hit save to restart and reclaim the resources!",
+							Type.TRAY_NOTIFICATION);
+					notification.setDelayMsec(Notification.DELAY_FOREVER);
+					notification.show(Page.getCurrent());
 				});
 			}
 		}
@@ -254,7 +258,7 @@ public class DockerService {
 		reactivateContainer(id);
 		runJetty(id, os);
 		setOwner(id, owner);
-		
+
 		configureProxy(id);
 	}
 
