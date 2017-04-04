@@ -22,7 +22,14 @@ public final class FileEditor extends CustomField<String> {
 		this.file = file;
 		
 		cm = new CodeMirrorField();
-		cm.setMode(getApplicableMode());
+		String mode = getApplicableMode();
+		cm.setMode(mode);
+		if ("text/x-scss".equals(mode)) {
+			cm.setIndentUnit(2);
+		}
+		else {
+			cm.setIndentUnit(4);
+		}
 		cm.setSizeFull();
 		addStyleName("file-editor");
 
