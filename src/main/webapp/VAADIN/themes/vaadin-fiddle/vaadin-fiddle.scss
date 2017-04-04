@@ -52,4 +52,7 @@
   .tools {
     margin: 14px;
   }
+  .editor-tabs-and-console > div > .v-splitpanel-first-container {
+    overflow: hidden;
+  }
 }

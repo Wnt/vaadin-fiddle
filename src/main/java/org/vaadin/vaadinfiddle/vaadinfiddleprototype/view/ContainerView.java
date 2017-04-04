@@ -59,6 +59,8 @@ public class ContainerView extends CustomComponent implements View {
 	@Override
 	public void enter(ViewChangeEvent event) {
 		setSizeFull();
+		
+		addStyleName("container-view");
 
 		dockerId = event.getParameters();
 
@@ -126,6 +128,7 @@ public class ContainerView extends CustomComponent implements View {
 		editorSplit.setSecondComponent(editorTabsAndConsole);
 		editorTabsAndConsole.setSizeFull();
 		editorTabsAndConsole.setSplitPosition(100, Unit.PERCENTAGE);
+		editorTabsAndConsole.addStyleName("editor-tabs-and-console");
 
 		// TODO use closehandler that checks for unsaved modifications
 		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
