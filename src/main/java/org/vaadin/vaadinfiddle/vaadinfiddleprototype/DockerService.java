@@ -162,6 +162,8 @@ public class DockerService {
 
 					"  proxy_read_timeout 15m;",
 
+					"  add_header X-Frame-Options SAMEORIGIN;",
+
 					"}"
 
 			);
