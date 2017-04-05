@@ -2,6 +2,7 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -204,6 +205,8 @@ public class ContainerView extends CustomComponent implements View {
 			startupNotification = new Notification("Console hidden",
 					"This fiddle was already running when you got here. If you want to see the console messages just hit save!",
 					Type.TRAY_NOTIFICATION);
+			startupNotification.setDelayMsec(5000);
+			startupNotification.show(Page.getCurrent());
 		} else if (fiddleContainer.isCreated()) {
 
 			FiddleUi.getDockerservice().startContainer(dockerId);
@@ -212,16 +215,14 @@ public class ContainerView extends CustomComponent implements View {
 
 			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel());
 
-			startupNotification = new Notification("Creating a fork",
-					"Booting up the fiddle fork. This shouldn't longer than a few seconds!", Type.TRAY_NOTIFICATION);
 		} else {
 			startupNotification = new Notification("Waking up",
 					"This fiddle was sleeping when you got here. Starting it up shouldn't longer than few seconds!",
 					Type.TRAY_NOTIFICATION);
+			startupNotification.setDelayMsec(5000);
+			startupNotification.show(Page.getCurrent());
 			restartJetty();
 		}
-		startupNotification.setDelayMsec(5000);
-		startupNotification.show(Page.getCurrent());
 	}
 
 	private void autoexpandAndSelectFirstJavaFile(File fiddleDirectory) {
@@ -271,9 +272,11 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void createResultFrame() {
-		String host = Page.getCurrent().getLocation().getHost();
+		URI location = Page.getCurrent().getLocation();
+		String host = location.getHost();
+		String scheme = location.getScheme();
 		BrowserFrame frame = new BrowserFrame("",
-				new ExternalResource("http://" + host + "/container/" + fiddleContainer.getId()));
+				new ExternalResource(scheme+"://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
 
 		Panel resultPanel = new Panel("Fiddle result app", frame);
