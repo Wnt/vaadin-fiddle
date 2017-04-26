@@ -54,7 +54,7 @@ and checkout the stub configuration in to there:
 git clone https://github.com/Wnt/nginx-fiddle-config.git /etc/nginx/fiddle-config
 ```
 and include the VaadinFiddle configuration in the nginx configuration
-``` 
+```
 include fiddle-config/fiddle-host.conf;
 ```
 e.g. in to `/etc/nginx/sites-available/default` after this block:
@@ -86,3 +86,66 @@ sudo chown root:docker /var/lib/docker
 sudo chown root:docker /var/lib/docker/volumes
 sudo chmod 750 /var/lib/docker/volumes
 ```
+## Optional: automatically set directory permissions
+Create directory to host local docker service customisation
+```
+mkdir /etc/systemd/system/docker.service.d/
+```
+and add the following content into `/etc/systemd/system/docker.service.d/directory_permissions.conf`:
+```
+[Service]
+ExecStartPost=/usr/local/bin/docker_directory_permissions.sh
+```
+then create `/usr/local/bin/docker_directory_permissions.sh` and put following content into there:
+```
+#!/usr/bin/env bash
+chown root:docker /var/lib/docker
+chown root:docker /var/lib/docker/volumes
+chmod 750 /var/lib/docker/volumes
+```
+and set it executable: `sudo chmod +x /usr/local/bin/docker_directory_permissions.sh`
+then run:
+```
+sudo systemctl daemon-reload
+sudo systemctl restart docker.service
+```
+to restart the service
+## Optional: restrict container networking
+```
+sudo apt instal ufw
+```
+Change `ENABLED` to `yes` in `/etc/ufw/ufw.conf`
+Allow inbound ssh, http & https:
+```
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
+```
+create directory to host local docker service customisation
+```
+mkdir /etc/systemd/system/docker.service.d/
+```
+and add the following content into `/etc/systemd/system/docker.service.d/network_whitelist.conf`:
+```
+[Service]
+ExecStartPost=/usr/local/bin/docker_network_whitelist.sh
+```
+then create `/usr/local/bin/docker_network_whitelist.sh` and put following content into there:
+```
+#!/usr/bin/env bash
+iptables --append DOCKER --protocol udp --destination <dns server> --destination-port 53 --jump ACCEPT
+iptables --append DOCKER --protocol udp --source <dns server> --source-port 53 --jump ACCEPT
+iptables --append DOCKER --protocol tcp --destination <allowed http server> --destination-port 80 --jump ACCEPT
+iptables --append DOCKER --protocol tcp --source <allowed http server> --source-port 80 --jump ACCEPT
+iptables --append DOCKER --protocol tcp --destination <allowed https server> --destination-port 443 --jump ACCEPT
+iptables --append DOCKER --protocol tcp --source <allowed http server> --source-port 443 --jump ACCEPT
+iptables --append DOCKER --jump DROP
+```
+adapt the server addresses to suit your use-case.
+and set it executable: `sudo chmod +x /usr/local/bin/docker_network_whitelist.sh`
+then run:
+```
+sudo systemctl daemon-reload
+sudo systemctl restart docker.service
+```
+to restart the service
