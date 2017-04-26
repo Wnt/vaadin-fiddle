@@ -1,4 +1,8 @@
-vaadinfiddleprototype
+VaadinFiddle
+==============
+VaadinFiddle is an online platform for developing Vaadin applications. Use it to share examples, test out new features and just to fiddle with Vaadin code. All from the comfort of your web browser - no installation needed!
+
+https://vaadinfiddle.com/editor/
 ==============
 
 ## Development environment setup instructions
