@@ -7,12 +7,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileSystemProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.PanelOutput;
 
 import com.vaadin.event.ShortcutAction.KeyCode;
@@ -42,6 +44,7 @@ import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
+import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.VerticalSplitPanel;
@@ -57,10 +60,10 @@ public class ContainerView extends CustomComponent implements View {
 	private Window fiddleWindow;
 	private String dockerId;
 	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
-	private Tree tree;
 	private VerticalSplitPanel editorTabsAndConsole;
 	private HorizontalSplitPanel mainAreaAndFiddleResult;
 	private boolean startedMessageShown = false;
+	private TreeGrid<File> tree;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -141,8 +144,12 @@ public class ContainerView extends CustomComponent implements View {
 
 		File fiddleDirectory = new File(fiddleContainer.getFiddleAppPath());
 
-		FilesystemContainer f = new FilesystemContainer(fiddleDirectory);
-		tree = new Tree("", f);
+		tree = new TreeGrid<>();
+		tree.setStyleName("file-picker");
+		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
+		tree.setDataProvider(fp);
+		tree.addColumn(File::getName);
+
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
 		editorTabs = new TabSheet();
@@ -163,13 +170,9 @@ public class ContainerView extends CustomComponent implements View {
 		});
 		editorTabs.setSizeFull();
 
-		Collection<String> containerPropertyIds = f.getContainerPropertyIds();
-
-		tree.setItemCaptionPropertyId("Name");
-
-		tree.addValueChangeListener(e -> {
-			File selectedFile = (File) tree.getValue();
-			if (selectedFile == null) {
+		tree.addSelectionListener(e -> {
+			File selectedFile = tree.asSingleSelect().getValue();
+			if (selectedFile == null || selectedFile.isDirectory()) {
 				return;
 			}
 			if (fileToEditorMap.get(selectedFile) != null) {
@@ -199,14 +202,12 @@ public class ContainerView extends CustomComponent implements View {
 		autoexpandAndSelectFirstJavaFile(fiddleDirectory);
 
 		tree.addExpandListener(e -> {
-			f.getItem(e.getItemId());
-			Collection<File> children = f.getChildren(e.getItemId());
-			if (children.size() == 1) {
+			File[] children = e.getExpandedItem().listFiles();
+			if (children.length == 1) {
 				for (File child : children) {
-					tree.expandItem(child);
+					tree.expand(child);
 				}
 			}
-
 		});
 
 		Notification startupNotification;
@@ -250,10 +251,10 @@ public class ContainerView extends CustomComponent implements View {
 			fs = fs.getParentFile();
 		}
 		for (int i = pathToJava.size() - 1; i >= 0; i--) {
-			tree.expandItem(pathToJava.get(i));
+			tree.expand(pathToJava.get(i));
 		}
 
-		tree.setValue(javaFile);
+		tree.select(javaFile);
 	}
 
 	private File findFirstJavaFile(File directory) {
@@ -286,7 +287,7 @@ public class ContainerView extends CustomComponent implements View {
 		String host = location.getHost();
 		String scheme = location.getScheme();
 		BrowserFrame frame = new BrowserFrame("",
-				new ExternalResource(scheme+"://" + host + "/container/" + fiddleContainer.getId()));
+				new ExternalResource(scheme + "://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
 
 		Panel resultPanel = new Panel("Fiddle result app", frame);
@@ -335,8 +336,8 @@ public class ContainerView extends CustomComponent implements View {
 		consoleOutput.addErrorListener(() -> {
 			editorTabs.getUI().access(() -> {
 
-				Notification notification = new Notification("Error occurred",
-						"Check the console output for more info", Type.WARNING_MESSAGE);
+				Notification notification = new Notification("Error occurred", "Check the console output for more info",
+						Type.WARNING_MESSAGE);
 				notification.setDelayMsec(Notification.DELAY_FOREVER);
 				notification.show(Page.getCurrent());
 

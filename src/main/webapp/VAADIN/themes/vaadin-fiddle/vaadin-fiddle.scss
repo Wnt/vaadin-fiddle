@@ -58,4 +58,18 @@
   .editor-tabs-and-console > div > .v-splitpanel-first-container {
     overflow: hidden;
   }
+  .file-picker {
+    .v-grid-header{
+      display: none;
+    }
+    .v-grid-row-stripe > td {
+      background-color: white;
+    }
+    .v-grid-row > td {
+      border-bottom: none;
+    }
+    .v-grid-tablewrapper {
+      background-color: white;
+    }
+  }
 }
