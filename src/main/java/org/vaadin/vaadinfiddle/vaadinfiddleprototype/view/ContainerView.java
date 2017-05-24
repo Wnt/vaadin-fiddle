@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
@@ -44,14 +43,13 @@ import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
+import com.vaadin.ui.Tree;
 import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.VerticalSplitPanel;
 import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
-import com.vaadin.v7.data.util.FilesystemContainer;
-import com.vaadin.v7.ui.Tree;
 
 public class ContainerView extends CustomComponent implements View {
 
@@ -63,7 +61,7 @@ public class ContainerView extends CustomComponent implements View {
 	private VerticalSplitPanel editorTabsAndConsole;
 	private HorizontalSplitPanel mainAreaAndFiddleResult;
 	private boolean startedMessageShown = false;
-	private TreeGrid<File> tree;
+	private Tree<File> tree;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -144,11 +142,11 @@ public class ContainerView extends CustomComponent implements View {
 
 		File fiddleDirectory = new File(fiddleContainer.getFiddleAppPath());
 
-		tree = new TreeGrid<>();
+		tree = new Tree<>();
 		tree.setStyleName("file-picker");
 		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
 		tree.setDataProvider(fp);
-		tree.addColumn(File::getName);
+		tree.setItemCaptionGenerator(File::getName);
 
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
