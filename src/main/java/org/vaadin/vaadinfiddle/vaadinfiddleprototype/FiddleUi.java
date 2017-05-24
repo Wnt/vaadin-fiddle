@@ -34,7 +34,6 @@ import com.vaadin.ui.Window;
  */
 @Theme("vaadin-fiddle")
 @Push
-@Widgetset("com.vaadin.v7.Vaadin7WidgetSet")
 public class FiddleUi extends UI {
 
 	final private static DockerService dockerService = new DockerService();

@@ -9,13 +9,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.component.FileEditor;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileSystemProvider;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileToStringValueProvider;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileTypeUtil;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.PanelOutput;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.StringToFileSetter;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.vaadin.data.Binder;
+import com.vaadin.data.Binder.Binding;
+import com.vaadin.data.Binder.BindingBuilder;
+import com.vaadin.data.ValidationException;
 import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.icons.VaadinIcons;
@@ -44,7 +53,6 @@ import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.Tree;
-import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.VerticalSplitPanel;
@@ -55,13 +63,13 @@ public class ContainerView extends CustomComponent implements View {
 
 	private TabSheet editorTabs;
 	private FiddleContainer fiddleContainer;
-	private Window fiddleWindow;
 	private String dockerId;
-	private Map<File, FileEditor> fileToEditorMap = new HashMap<>();
+	private BiMap<File, Component> fileToEditorMap = HashBiMap.create();
 	private VerticalSplitPanel editorTabsAndConsole;
 	private HorizontalSplitPanel mainAreaAndFiddleResult;
 	private boolean startedMessageShown = false;
 	private Tree<File> tree;
+	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -162,9 +170,10 @@ public class ContainerView extends CustomComponent implements View {
 
 		// TODO use closehandler that checks for unsaved modifications
 		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
-			FileEditor e = (FileEditor) tabContent;
-			fileToEditorMap.remove(e.getFile());
-			editorTabs.removeComponent(e);
+			File file = fileToEditorMap.inverse().get(tabContent);
+			fileToEditorMap.remove(file);
+			fileToBinderMap.remove(file);
+			editorTabs.removeComponent(tabContent);
 		});
 		editorTabs.setSizeFull();
 
@@ -177,22 +186,7 @@ public class ContainerView extends CustomComponent implements View {
 				editorTabs.setSelectedTab(fileToEditorMap.get(selectedFile));
 				return;
 			}
-			FileEditor fileEditor = new FileEditor(selectedFile);
-			fileEditor.setSizeFull();
-
-			fileToEditorMap.put(selectedFile, fileEditor);
-
-			String fileName = selectedFile.getName();
-			Tab tab = editorTabs.addTab(fileEditor, fileName);
-			fileEditor.addTextChangeListener(te -> {
-				if (!te.getText().equals(fileEditor.getPropertyDataSource().getValue())) {
-					tab.setCaption(fileName + " *");
-				} else {
-					tab.setCaption(fileName);
-				}
-
-			});
-			tab.setClosable(true);
+			Tab tab = createNewEditorTab(selectedFile);
 
 			editorTabs.setSelectedTab(tab);
 		});
@@ -232,6 +226,39 @@ public class ContainerView extends CustomComponent implements View {
 			startupNotification.show(Page.getCurrent());
 			restartJetty();
 		}
+	}
+
+	private Tab createNewEditorTab(File selectedFile) {
+
+		CodeMirrorField codeMirrorField = new CodeMirrorField();
+
+		String fileName = selectedFile.getName();
+		codeMirrorField.setMode(FileTypeUtil.getMimeTypeByFileExtension(fileName));
+
+		Binder<File> binder = new Binder<File>();
+		BindingBuilder<File, String> bb = binder.forField(codeMirrorField);
+
+		Binding<File, String> binding = bb.bind(new FileToStringValueProvider(), new StringToFileSetter());
+		binder.readBean(selectedFile);
+
+		codeMirrorField.setSizeFull();
+
+		fileToEditorMap.put(selectedFile, codeMirrorField);
+		fileToBinderMap.put(selectedFile, binder);
+
+		Tab tab = editorTabs.addTab(codeMirrorField, fileName);
+		String origValue = new FileToStringValueProvider().apply(selectedFile);
+
+		codeMirrorField.addValueChangeListener(e -> {
+			if (!codeMirrorField.getValue().equals(origValue)) {
+				tab.setCaption(fileName + " *");
+			} else {
+				tab.setCaption(fileName);
+			}
+		});
+
+		tab.setClosable(true);
+		return tab;
 	}
 
 	private void autoexpandAndSelectFirstJavaFile(File fiddleDirectory) {
@@ -349,9 +376,16 @@ public class ContainerView extends CustomComponent implements View {
 
 	private void saveAllFiles() {
 		for (Component component : editorTabs) {
-			FileEditor fileEditor = (FileEditor) component;
-			fileEditor.commit();
-			editorTabs.getTab(fileEditor).setCaption(fileEditor.getFile().getName());
+			File file = fileToEditorMap.inverse().get(component);
+			fileToBinderMap.get(file);
+			Binder<File> binder = fileToBinderMap.get(file);
+			try {
+				binder.writeBean(file);
+			} catch (ValidationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			editorTabs.getTab(component).setCaption(file.getName());
 		}
 	}
 
