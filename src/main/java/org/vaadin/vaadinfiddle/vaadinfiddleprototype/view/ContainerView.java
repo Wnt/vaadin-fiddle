@@ -3,7 +3,6 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +18,7 @@ import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi.ViewIds;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.components.TreeWithContextMenu;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileSystemProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileToStringValueProvider;
@@ -63,8 +63,6 @@ import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.TextField;
-import com.vaadin.ui.Tree;
-import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.VerticalSplitPanel;
@@ -80,7 +78,7 @@ public class ContainerView extends CustomComponent implements View {
 	private VerticalSplitPanel editorTabsAndConsole;
 	private HorizontalSplitPanel mainAreaAndFiddleResult;
 	private boolean startedMessageShown = false;
-	private Tree<File> tree;
+	private TreeWithContextMenu<File> tree;
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 	private List<File> expandedDirectories = new ArrayList<>();
 	private File selectedFile;
@@ -171,7 +169,7 @@ public class ContainerView extends CustomComponent implements View {
 
 		File fiddleDirectory = getFiddleDirectory();
 
-		tree = new Tree<>();
+		tree = new TreeWithContextMenu();
 		tree.setStyleName("file-picker");
 		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
 		tree.setDataProvider(fp);
@@ -284,26 +282,8 @@ public class ContainerView extends CustomComponent implements View {
 	}
 
 	private void createTreeContextMenu() {
-		try {
-			Field f = tree.getClass().getDeclaredField("treeGrid");
-			f.setAccessible(true);
-			TreeGrid treegrid = (TreeGrid) f.get(tree);
-			GridContextMenu<File> gridMenu = new GridContextMenu<>(treegrid);
-			gridMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
-		} catch (NoSuchFieldException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (SecurityException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} // NoSuchFieldException
-		catch (IllegalArgumentException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IllegalAccessException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		GridContextMenu<File> contextMenu = tree.getContextMenu();
+		contextMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
 	}
 
 	private void updateTreeMenu(GridContextMenuOpenEvent<File> contextEvent) {
