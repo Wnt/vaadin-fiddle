@@ -13,7 +13,6 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ListView;
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
-import com.vaadin.annotations.Widgetset;
 import com.vaadin.navigator.Navigator;
 import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.ServiceException;

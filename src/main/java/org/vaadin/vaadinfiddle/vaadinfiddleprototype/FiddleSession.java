@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.vaadin.server.VaadinService;
 import com.vaadin.server.VaadinSession;
-import com.vaadin.util.CurrentInstance;
 
 public class FiddleSession extends VaadinSession {
 	private static final String OWNED_CONTAINERS = "owned_containers";

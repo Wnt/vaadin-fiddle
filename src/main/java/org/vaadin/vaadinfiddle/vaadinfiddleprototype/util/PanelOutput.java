@@ -5,13 +5,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.vaadin.server.Page;
 import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
 import com.vaadin.ui.Panel;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.Window;
 
 public class PanelOutput extends OutputStream {
 	private Layout consoleOutput;
