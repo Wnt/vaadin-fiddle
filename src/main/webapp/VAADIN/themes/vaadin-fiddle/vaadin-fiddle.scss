@@ -27,4 +27,13 @@
   .editor-tabs-and-console > div > .v-splitpanel-first-container {
     overflow: hidden;
   }
+  .v-menubar-popup .v-menubar-menuitem-selected.danger {
+    background-color: #ed473b;
+    background-image: -webkit-linear-gradient(top, #ee4c3f 2%, #e13e33 98%);
+    background-image: linear-gradient(to bottom,#ee4c3f 2%, #e13e33 98%);
+    color: black;
+  }
+  .v-menubar-menuitem.danger {
+    color: red;
+  }
 }

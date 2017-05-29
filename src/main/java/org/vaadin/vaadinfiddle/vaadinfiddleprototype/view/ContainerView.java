@@ -2,6 +2,8 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,7 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.StringUtils;
 import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
@@ -24,6 +28,9 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.StringToFileSetter;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.vaadin.contextmenu.GridContextMenu;
+import com.vaadin.contextmenu.GridContextMenu.GridContextMenuOpenListener.GridContextMenuOpenEvent;
+import com.vaadin.contextmenu.MenuItem;
 import com.vaadin.data.Binder;
 import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
@@ -55,7 +62,9 @@ import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
+import com.vaadin.ui.TextField;
 import com.vaadin.ui.Tree;
+import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.VerticalSplitPanel;
@@ -189,6 +198,8 @@ public class ContainerView extends CustomComponent implements View {
 			return VaadinIcons.FILE_O;
 		});
 
+		createTreeContextMenu();
+
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
 		editorTabs = new TabSheet();
@@ -272,6 +283,117 @@ public class ContainerView extends CustomComponent implements View {
 		}
 	}
 
+	private void createTreeContextMenu() {
+		try {
+			Field f = tree.getClass().getDeclaredField("treeGrid");
+			f.setAccessible(true);
+			TreeGrid treegrid = (TreeGrid) f.get(tree);
+			GridContextMenu<File> gridMenu = new GridContextMenu<>(treegrid);
+			gridMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
+		} catch (NoSuchFieldException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (SecurityException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} // NoSuchFieldException
+		catch (IllegalArgumentException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IllegalAccessException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+
+	private void updateTreeMenu(GridContextMenuOpenEvent<File> contextEvent) {
+		contextEvent.getContextMenu().removeItems();
+
+		if (contextEvent.getItem() != null) {
+			File f = (File) contextEvent.getItem();
+
+			File dir = f.isDirectory() ? f : f.getParentFile();
+
+			String dirAbbrev = StringUtils.abbreviate(dir.getName(), 12);
+			String addCaption = "Create new file in '" + dirAbbrev + "'";
+			contextEvent.getContextMenu().addItem(addCaption, VaadinIcons.FILE_ADD, (MenuItem selectedItem) -> {
+				Window window = new Window("Creating a new file in '" + dirAbbrev + "'");
+
+				TextField textField = new TextField("File name");
+				textField.focus();
+				textField.setWidth("100%");
+				Button okButton = new Button("OK", e -> {
+					window.close();
+					createNewFile(dir, textField.getValue());
+				});
+				okButton.addStyleName(ValoTheme.BUTTON_FRIENDLY);
+				okButton.setClickShortcut(KeyCode.ENTER, null);
+				VerticalLayout windowRoot = new VerticalLayout(textField, okButton);
+				windowRoot.setComponentAlignment(okButton, Alignment.BOTTOM_RIGHT);
+				window.setContent(windowRoot);
+				windowRoot.setSizeFull();
+				windowRoot.setMargin(true);
+
+				UI.getCurrent().addWindow(window);
+				window.setWidth("400px");
+				window.setHeight("200px");
+				window.center();
+				window.setResizable(false);
+				window.setModal(true);
+
+			});
+
+			contextEvent.getContextMenu().addSeparator();
+
+			String name = f.getName();
+			String delCaption = "Delete '" + StringUtils.abbreviate(name, 12) + "'";
+			VaadinIcons icon = f.isDirectory() ? VaadinIcons.FOLDER_REMOVE : VaadinIcons.FILE_REMOVE;
+			MenuItem removeFile = contextEvent.getContextMenu().addItem(delCaption, icon, (MenuItem selectedItem) -> {
+				if (f.isDirectory()) {
+					try {
+						FileUtils.deleteDirectory(f);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} else {
+					f.delete();
+				}
+				// TODO re-init view without a navigation event
+				UI.getCurrent().getNavigator().navigateTo(ViewIds.CONTAINER + "/" + dockerId);
+			});
+			removeFile.setStyleName(ValoTheme.BUTTON_DANGER);
+		} else {
+			MenuItem addItem = contextEvent.getContextMenu().addItem("N/A", VaadinIcons.BAN, selectedItem -> {
+			});
+			addItem.setEnabled(false);
+		}
+
+	}
+
+	private void createNewFile(File dir, String value) {
+		File file = new File(dir.getAbsolutePath() + "/" + value);
+		String dockerPath = getFiddleDirectory().getAbsolutePath();
+		if (!file.getAbsolutePath().startsWith(dockerPath)) {
+			Notification.show("Error creating file", "Cannot create file outside of fiddle root", Type.ERROR_MESSAGE);
+		}
+		try {
+			if (file.createNewFile()) {
+				String dockerRelativePath = file.getAbsolutePath().substring(dockerPath.length());
+				UI.getCurrent().getNavigator()
+						.navigateTo(ViewIds.CONTAINER + "/" + dockerId + "/" + dockerRelativePath);
+			} else {
+				Notification.show("File already exists",
+						"Could not create file ('" + StringUtils.abbreviate(value, 12) + "') ", Type.ERROR_MESSAGE);
+			}
+		} catch (IOException e) {
+			Notification.show("Error creating file",
+					"Could not create file ('" + StringUtils.abbreviate(value, 12) + "'): " + e.getMessage(),
+					Type.ERROR_MESSAGE);
+		}
+
+	}
+
 	private void updateTitle() {
 		String file = selectedFile != null ? selectedFile.getName() + " - " : "";
 		Page.getCurrent().setTitle(file + fiddleContainer.getName() + " - Container - VaadinFiddle");
@@ -279,7 +401,8 @@ public class ContainerView extends CustomComponent implements View {
 
 	/**
 	 * 
-	 * @param fileToSelect relative path to file inside container
+	 * @param fileToSelect
+	 *            relative path to file inside container
 	 */
 	private void expandAndSelectFile(String fileToSelect) {
 		File fiddleDirectory = getFiddleDirectory();
