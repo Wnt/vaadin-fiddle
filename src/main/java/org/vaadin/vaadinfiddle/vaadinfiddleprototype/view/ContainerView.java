@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
@@ -25,6 +26,7 @@ import com.vaadin.data.Binder;
 import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
 import com.vaadin.data.ValidationException;
+import com.vaadin.event.CollapseEvent;
 import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.icons.VaadinIcons;
@@ -70,6 +72,7 @@ public class ContainerView extends CustomComponent implements View {
 	private boolean startedMessageShown = false;
 	private Tree<File> tree;
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
+	private List<File> expandedDirectories = new ArrayList<>();
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -155,6 +158,28 @@ public class ContainerView extends CustomComponent implements View {
 		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
 		tree.setDataProvider(fp);
 		tree.setItemCaptionGenerator(File::getName);
+		
+		
+		tree.addExpandListener(expandEvent -> {
+			expandedDirectories.add(expandEvent.getExpandedItem());
+		});
+		tree.addCollapseListener(collapseEvent -> {
+			expandedDirectories.remove(collapseEvent.getCollapsedItem());
+		});
+		
+		tree.setItemIconGenerator(file -> {
+			if (file.isDirectory()) {
+				if (expandedDirectories.contains(file)) {
+					return VaadinIcons.FOLDER_OPEN_O;
+				}
+				return VaadinIcons.FOLDER_O;
+			}
+			String name = file.getName().toLowerCase();
+			if(name.endsWith(".java") || name.endsWith(".scss") || name.endsWith(".css") || name.endsWith(".xml")) {
+				return VaadinIcons.FILE_CODE;
+			}
+			return VaadinIcons.FILE_O;
+		});
 
 		editorSplit.setFirstComponent(tree);
 		tree.setSizeFull();
