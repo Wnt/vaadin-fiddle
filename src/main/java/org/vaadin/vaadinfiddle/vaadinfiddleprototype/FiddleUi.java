@@ -36,16 +36,29 @@ import com.vaadin.ui.Window;
 @Push
 public class FiddleUi extends UI {
 
+	public static enum ViewIds {
+		CREATOR(""), LIST("list"), CONTAINER("container"), FORK("fork");
+		private final String id;
+
+		ViewIds(final String s) {
+			id = s;
+		}
+
+		public String toString() {
+			return id;
+		}
+	};
+
 	final private static DockerService dockerService = new DockerService();
 
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
 
 		Navigator navi = new Navigator(this, this);
-		navi.addView("", CreatorView.class);
-		navi.addView("list", ListView.class);
-		navi.addView("container", ContainerView.class);
-		navi.addView("fork", ForkView.class);
+		navi.addView(ViewIds.CREATOR + "", CreatorView.class);
+		navi.addView(ViewIds.LIST + "", ListView.class);
+		navi.addView(ViewIds.CONTAINER + "", ContainerView.class);
+		navi.addView(ViewIds.FORK + "", ForkView.class);
 
 		navi.addViewChangeListener(e -> {
 
@@ -64,7 +77,7 @@ public class FiddleUi extends UI {
 	@WebServlet(urlPatterns = { "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
 	@VaadinServletConfiguration(ui = FiddleUi.class, productionMode = false)
 	public static class VaadinFiddleUiServlet extends VaadinServlet {
-		
+
 		@Override
 		protected VaadinServletService createServletService(DeploymentConfiguration deploymentConfiguration)
 				throws ServiceException {

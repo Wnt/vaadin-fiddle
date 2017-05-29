@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi.ViewIds;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileSystemProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileToStringValueProvider;
@@ -26,7 +28,6 @@ import com.vaadin.data.Binder;
 import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
 import com.vaadin.data.ValidationException;
-import com.vaadin.event.CollapseEvent;
 import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.icons.VaadinIcons;
@@ -73,18 +74,26 @@ public class ContainerView extends CustomComponent implements View {
 	private Tree<File> tree;
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 	private List<File> expandedDirectories = new ArrayList<>();
+	private File selectedFile;
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public void enter(ViewChangeEvent event) {
 		setSizeFull();
 
 		addStyleName("container-view");
 
-		dockerId = event.getParameters();
+		String params = event.getParameters();
+		int idFileSplit = params.indexOf("/");
+		String fileToSelect = null;
+		if (idFileSplit != -1) {
+			dockerId = params.substring(0, idFileSplit);
+			fileToSelect = params.substring(idFileSplit);
+		} else {
+			dockerId = params;
+		}
 
 		if (!FiddleSession.getCurrent().ownsContainer(dockerId)) {
-			UI.getCurrent().getNavigator().navigateTo("fork/" + dockerId);
+			UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + dockerId);
 			return;
 		}
 
@@ -147,26 +156,25 @@ public class ContainerView extends CustomComponent implements View {
 		newButton.setClickShortcut(KeyCode.N, ModifierKey.ALT);
 
 		readContainerInfo();
-		Page.getCurrent().setTitle(fiddleContainer.getName() + " - Container - VaadinFiddle");
+		updateTitle();
 
 		FiddleUi.getDockerservice().setOwner(dockerId, UI.getCurrent());
 
-		File fiddleDirectory = new File(fiddleContainer.getFiddleAppPath());
+		File fiddleDirectory = getFiddleDirectory();
 
 		tree = new Tree<>();
 		tree.setStyleName("file-picker");
 		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
 		tree.setDataProvider(fp);
 		tree.setItemCaptionGenerator(File::getName);
-		
-		
+
 		tree.addExpandListener(expandEvent -> {
 			expandedDirectories.add(expandEvent.getExpandedItem());
 		});
 		tree.addCollapseListener(collapseEvent -> {
 			expandedDirectories.remove(collapseEvent.getCollapsedItem());
 		});
-		
+
 		tree.setItemIconGenerator(file -> {
 			if (file.isDirectory()) {
 				if (expandedDirectories.contains(file)) {
@@ -175,7 +183,7 @@ public class ContainerView extends CustomComponent implements View {
 				return VaadinIcons.FOLDER_O;
 			}
 			String name = file.getName().toLowerCase();
-			if(name.endsWith(".java") || name.endsWith(".scss") || name.endsWith(".css") || name.endsWith(".xml")) {
+			if (name.endsWith(".java") || name.endsWith(".scss") || name.endsWith(".css") || name.endsWith(".xml")) {
 				return VaadinIcons.FILE_CODE;
 			}
 			return VaadinIcons.FILE_O;
@@ -202,21 +210,32 @@ public class ContainerView extends CustomComponent implements View {
 		});
 		editorTabs.setSizeFull();
 
+		editorTabs.addSelectedTabChangeListener(selectionEvent -> {
+			File selectedFile = fileToEditorMap.inverse().get(editorTabs.getSelectedTab());
+
+			String relativeFilePath = selectedFile.getAbsolutePath()
+					.substring(fiddleContainer.getFiddleAppPath().length() + 1);
+
+			String uriFragment = "!" + ViewIds.CONTAINER + "/" + dockerId + "/" + relativeFilePath;
+			Page.getCurrent().setUriFragment(uriFragment, false);
+			this.selectedFile = selectedFile;
+			expandAndSelectFile(relativeFilePath);
+			updateTitle();
+		});
+
 		tree.addSelectionListener(e -> {
 			File selectedFile = tree.asSingleSelect().getValue();
 			if (selectedFile == null || selectedFile.isDirectory()) {
 				return;
 			}
-			if (fileToEditorMap.get(selectedFile) != null) {
-				editorTabs.setSelectedTab(fileToEditorMap.get(selectedFile));
-				return;
-			}
-			Tab tab = createNewEditorTab(selectedFile);
-
-			editorTabs.setSelectedTab(tab);
+			showFileInEditor(selectedFile);
 		});
 
-		autoexpandAndSelectFirstJavaFile(fiddleDirectory);
+		if (fileToSelect != null && !fileToSelect.isEmpty()) {
+			expandAndSelectFile(fileToSelect);
+		} else {
+			expandAndSelectFirstJavaFile();
+		}
 
 		tree.addExpandListener(e -> {
 			File[] children = e.getExpandedItem().listFiles();
@@ -253,6 +272,43 @@ public class ContainerView extends CustomComponent implements View {
 		}
 	}
 
+	private void updateTitle() {
+		String file = selectedFile != null ? selectedFile.getName() + " - " : "";
+		Page.getCurrent().setTitle(file + fiddleContainer.getName() + " - Container - VaadinFiddle");
+	}
+
+	/**
+	 * 
+	 * @param fileToSelect relative path to file inside container
+	 */
+	private void expandAndSelectFile(String fileToSelect) {
+		File fiddleDirectory = getFiddleDirectory();
+		List<String> pathToFile = Arrays.asList(fileToSelect.split("/"));
+		String parentPath = "";
+		String absolutePath = fiddleDirectory.getAbsolutePath();
+		for (String pathPart : pathToFile) {
+			if (pathPart.isEmpty()) {
+				continue;
+			}
+			String pathname = absolutePath + parentPath + "/" + pathPart;
+			tree.expand(new File(pathname));
+			parentPath += "/" + pathPart;
+		}
+
+		tree.select(new File(absolutePath + "/" + parentPath));
+
+	}
+
+	private void showFileInEditor(File selectedFile) {
+		if (fileToEditorMap.get(selectedFile) != null) {
+			editorTabs.setSelectedTab(fileToEditorMap.get(selectedFile));
+			return;
+		}
+		Tab tab = createNewEditorTab(selectedFile);
+
+		editorTabs.setSelectedTab(tab);
+	}
+
 	private Tab createNewEditorTab(File selectedFile) {
 
 		CodeMirrorField codeMirrorField = new CodeMirrorField();
@@ -286,7 +342,8 @@ public class ContainerView extends CustomComponent implements View {
 		return tab;
 	}
 
-	private void autoexpandAndSelectFirstJavaFile(File fiddleDirectory) {
+	private void expandAndSelectFirstJavaFile() {
+		File fiddleDirectory = getFiddleDirectory();
 		File javaFile = findFirstJavaFile(fiddleDirectory);
 		if (javaFile == null) {
 			return;
@@ -305,6 +362,10 @@ public class ContainerView extends CustomComponent implements View {
 		}
 
 		tree.select(javaFile);
+	}
+
+	private File getFiddleDirectory() {
+		return new File(fiddleContainer.getFiddleAppPath());
 	}
 
 	private File findFirstJavaFile(File directory) {

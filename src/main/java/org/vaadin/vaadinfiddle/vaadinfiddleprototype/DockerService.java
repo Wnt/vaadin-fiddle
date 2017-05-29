@@ -25,6 +25,7 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -37,8 +38,8 @@ import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.vaadin.server.Page;
 import com.vaadin.ui.Notification;
-import com.vaadin.ui.UI;
 import com.vaadin.ui.Notification.Type;
+import com.vaadin.ui.UI;
 
 public class DockerService {
 
@@ -89,6 +90,9 @@ public class DockerService {
 	public String cloneContainer(String id) {
 		CreateContainerCmd containerStub = createContainerStub();
 		String datadir = getDatadirById(id);
+		if (datadir == null) {
+			return null;
+		}
 
 		String datadirClone = "/tmp/fiddle_" + UUID.randomUUID();
 
@@ -275,14 +279,18 @@ public class DockerService {
 
 	public String getDatadirById(String id) {
 
-		InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
+		try {
+			InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
 
-		for (Mount mount : containerInfo.getMounts()) {
-			String target = mount.getDestination().getPath();
-			if ("/webapp/fiddleapp".equals(target)) {
-				return mount.getSource();
+			for (Mount mount : containerInfo.getMounts()) {
+				String target = mount.getDestination().getPath();
+				if ("/webapp/fiddleapp".equals(target)) {
+					return mount.getSource();
+				}
+
 			}
-
+		} catch (NotFoundException e) {
+			System.err.println("tried to get datadir of nonexisting container: " + id);
 		}
 		return null;
 	}
