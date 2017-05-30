@@ -35,6 +35,7 @@ import com.vaadin.data.Binder;
 import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
 import com.vaadin.data.ValidationException;
+import com.vaadin.data.validator.StringLengthValidator;
 import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
@@ -42,6 +43,7 @@ import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.BrowserWindowOpener;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.Page;
+import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.BrowserFrame;
 import com.vaadin.ui.Button;
@@ -195,6 +197,7 @@ public class ContainerView extends ContainerDesign implements View {
 	}
 
 	private void populateTree() {
+		expandedDirectories.clear();
 		File fiddleDirectory = getFiddleDirectory();
 
 		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
@@ -227,6 +230,11 @@ public class ContainerView extends ContainerDesign implements View {
 		contextMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
 	}
 
+	/**
+	 * Updates tree's context menu items based on the GridContextMenuOpenEvent
+	 * 
+	 * @param contextEvent
+	 */
 	private void updateTreeMenu(GridContextMenuOpenEvent<File> contextEvent) {
 		contextEvent.getContextMenu().removeItems();
 
@@ -234,33 +242,15 @@ public class ContainerView extends ContainerDesign implements View {
 			File f = (File) contextEvent.getItem();
 
 			File dir = f.isDirectory() ? f : f.getParentFile();
-
 			String dirAbbrev = StringUtils.abbreviate(dir.getName(), 12);
-			String addCaption = "Create new file in '" + dirAbbrev + "'";
-			contextEvent.getContextMenu().addItem(addCaption, VaadinIcons.FILE_ADD, (MenuItem selectedItem) -> {
-				Window window = new Window("Creating a new file in '" + dirAbbrev + "'");
+			String addFileCaption = "Create new file in '" + dirAbbrev + "'";
+			contextEvent.getContextMenu().addItem(addFileCaption, VaadinIcons.FILE_ADD, (MenuItem selectedItem) -> {
+				createNewFileRequested(dir);
 
-				TextField textField = new TextField("File name");
-				textField.focus();
-				textField.setWidth("100%");
-				Button okButton = new Button("OK", e -> {
-					window.close();
-					createNewFile(dir, textField.getValue());
-				});
-				okButton.addStyleName(ValoTheme.BUTTON_FRIENDLY);
-				okButton.setClickShortcut(KeyCode.ENTER, null);
-				VerticalLayout windowRoot = new VerticalLayout(textField, okButton);
-				windowRoot.setComponentAlignment(okButton, Alignment.BOTTOM_RIGHT);
-				window.setContent(windowRoot);
-				windowRoot.setSizeFull();
-				windowRoot.setMargin(true);
-
-				UI.getCurrent().addWindow(window);
-				window.setWidth("400px");
-				window.setHeight("200px");
-				window.center();
-				window.setResizable(false);
-				window.setModal(true);
+			});
+			String addDirCaption = "Create new directory in '" + dirAbbrev + "'";
+			contextEvent.getContextMenu().addItem(addDirCaption, VaadinIcons.FOLDER_ADD, (MenuItem selectedItem) -> {
+				createNewDirRequested(dir);
 
 			});
 
@@ -270,23 +260,7 @@ public class ContainerView extends ContainerDesign implements View {
 			String delCaption = "Delete '" + StringUtils.abbreviate(name, 12) + "'";
 			VaadinIcons icon = f.isDirectory() ? VaadinIcons.FOLDER_REMOVE : VaadinIcons.FILE_REMOVE;
 			MenuItem removeFile = contextEvent.getContextMenu().addItem(delCaption, icon, (MenuItem selectedItem) -> {
-				if (f.isDirectory()) {
-					try {
-						FileUtils.deleteDirectory(f);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} else {
-					f.delete();
-				}
-				populateTree();
-				Component tab = fileToEditorMap.get(f);
-				if (tab != null) {
-					editorTabs.removeComponent(tab);
-				}
-				expandAndSelectFile(
-						selectedFile.getAbsolutePath().substring(getFiddleDirectory().getAbsolutePath().length()));
+				removeFileRequested(f);
 			});
 			removeFile.setStyleName(ValoTheme.BUTTON_DANGER);
 		} else {
@@ -295,6 +269,138 @@ public class ContainerView extends ContainerDesign implements View {
 			addItem.setEnabled(false);
 		}
 
+	}
+
+	private void createNewDirRequested(File dir) {
+
+		String dirAbbrev = StringUtils.abbreviate(dir.getName(), 12);
+		Window window = new Window("Creating a new directory in '" + dirAbbrev + "'");
+
+		TextField textField = new TextField("Directory name");
+		textField.focus();
+		textField.setWidth("100%");
+		textField.setValueChangeMode(ValueChangeMode.EAGER);
+
+		Button okButton = new Button("OK", e -> {
+			window.close();
+			createNewDir(dir, textField.getValue());
+		});
+
+		Binder<Void> binder = new Binder<>();
+		binder.forField(textField)
+				.withValidator(new StringLengthValidator("Name must be between 3 - 64 characters", 3, 64))
+				.withValidationStatusHandler(validationEvent -> {
+					okButton.setEnabled(!validationEvent.isError());
+					if (validationEvent.getMessage().isPresent()) {
+						okButton.setDescription(validationEvent.getMessage().get());
+					} else {
+						okButton.setDescription("Create directory");
+					}
+				}).bind((a) -> "", (s, d) -> {
+				});
+		// trigger validation event
+		textField.setValue(" ");
+		textField.setValue("");
+
+		okButton.addStyleName(ValoTheme.BUTTON_FRIENDLY);
+		okButton.setClickShortcut(KeyCode.ENTER, null);
+		VerticalLayout windowRoot = new VerticalLayout(textField, okButton);
+		windowRoot.setComponentAlignment(okButton, Alignment.BOTTOM_RIGHT);
+		window.setContent(windowRoot);
+		windowRoot.setSizeFull();
+
+		showDialogWindow(window);
+
+	}
+
+	private void createNewDir(File dir, String value) {
+		File file = new File(dir.getAbsolutePath() + "/" + value);
+		String dockerPath = getFiddleDirectory().getAbsolutePath();
+		if (!file.getAbsolutePath().startsWith(dockerPath)) {
+			Notification.show("Error creating directory", "Cannot create file outside of fiddle root",
+					Type.ERROR_MESSAGE);
+		}
+		if (!file.mkdirs()) {
+			Notification.show("Error creating directory", "Maybe the directory name is already in use?",
+					Type.ERROR_MESSAGE);
+		}
+		List<File> oldExpands = new ArrayList<>(expandedDirectories);
+		populateTree();
+		getTree().expand(oldExpands);
+	}
+
+	private void removeFileRequested(File f) {
+		if (f.isDirectory()) {
+			try {
+				FileUtils.deleteDirectory(f);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			f.delete();
+		}
+		populateTree();
+		Component tab = fileToEditorMap.get(f);
+		if (tab != null) {
+			editorTabs.removeComponent(tab);
+		}
+		expandAndSelectFile(selectedFile.getAbsolutePath().substring(getFiddleDirectory().getAbsolutePath().length()));
+	}
+
+	/**
+	 * Shows file name dialog to the user and creates the file on button click
+	 * 
+	 * @param dir
+	 */
+	private void createNewFileRequested(File dir) {
+
+		String dirAbbrev = StringUtils.abbreviate(dir.getName(), 12);
+		Window window = new Window("Creating a new file in '" + dirAbbrev + "'");
+
+		TextField textField = new TextField("File name");
+		textField.focus();
+		textField.setWidth("100%");
+		textField.setValueChangeMode(ValueChangeMode.EAGER);
+
+		Button okButton = new Button("OK", e -> {
+			window.close();
+			createNewFile(dir, textField.getValue());
+		});
+
+		Binder<Void> binder = new Binder<>();
+		binder.forField(textField)
+				.withValidator(new StringLengthValidator("Name must be between 4 - 64 characters", 4, 64))
+				.withValidationStatusHandler(validationEvent -> {
+					okButton.setEnabled(!validationEvent.isError());
+					if (validationEvent.getMessage().isPresent()) {
+						okButton.setDescription(validationEvent.getMessage().get());
+					} else {
+						okButton.setDescription("Create file");
+					}
+				}).bind((a) -> "", (s, d) -> {
+				});
+		// trigger validation event
+		textField.setValue(" ");
+		textField.setValue("");
+
+		okButton.addStyleName(ValoTheme.BUTTON_FRIENDLY);
+		okButton.setClickShortcut(KeyCode.ENTER, null);
+		VerticalLayout windowRoot = new VerticalLayout(textField, okButton);
+		windowRoot.setComponentAlignment(okButton, Alignment.BOTTOM_RIGHT);
+		window.setContent(windowRoot);
+		windowRoot.setSizeFull();
+
+		showDialogWindow(window);
+	}
+
+	private static void showDialogWindow(Window window) {
+		UI.getCurrent().addWindow(window);
+		window.setWidth("400px");
+		window.setHeight("200px");
+		window.center();
+		window.setResizable(false);
+		window.setModal(true);
 	}
 
 	private void createNewFile(File dir, String value) {
@@ -306,8 +412,13 @@ public class ContainerView extends ContainerDesign implements View {
 		try {
 			if (file.createNewFile()) {
 				String dockerRelativePath = file.getAbsolutePath().substring(dockerPath.length());
-				UI.getCurrent().getNavigator()
-						.navigateTo(ViewIds.CONTAINER + "/" + dockerId + "/" + dockerRelativePath);
+
+				List<File> oldExpands = new ArrayList<>(expandedDirectories);
+				populateTree();
+				getTree().expand(oldExpands);
+
+				expandAndSelectFile(dockerRelativePath);
+
 			} else {
 				Notification.show("File already exists",
 						"Could not create file ('" + StringUtils.abbreviate(value, 12) + "') ", Type.ERROR_MESSAGE);
