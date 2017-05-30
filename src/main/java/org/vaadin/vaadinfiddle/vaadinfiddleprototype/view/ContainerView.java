@@ -525,7 +525,7 @@ public class ContainerView extends ContainerDesign implements View {
 	}
 
 	private File getFiddleDirectory() {
-		return new File(fiddleContainer.getFiddleAppPath());
+		return fiddleContainer.getFiddleDirectory();
 	}
 
 	private File findFirstJavaFile(File directory) {

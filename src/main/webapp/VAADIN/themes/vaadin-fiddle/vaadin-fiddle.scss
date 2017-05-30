@@ -36,4 +36,11 @@
   .v-menubar-menuitem.danger {
     color: red;
   }
+  .preview-view {
+    transform: scale(0.75);
+    width: 132% !important;
+    height: 132% !important;
+    left: -16%;
+    top: -16%;
+  }
 }

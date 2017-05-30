@@ -9,6 +9,7 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ContainerView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.CreatorView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ForkView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ListView;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.PreviewView;
 
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
@@ -36,7 +37,7 @@ import com.vaadin.ui.Window;
 public class FiddleUi extends UI {
 
 	public static enum ViewIds {
-		CREATOR(""), LIST("list"), CONTAINER("container"), FORK("fork");
+		CREATOR(""), LIST("list"), CONTAINER("container"), FORK("fork"), PREVIEW("preview");
 		private final String id;
 
 		ViewIds(final String s) {
@@ -58,6 +59,7 @@ public class FiddleUi extends UI {
 		navi.addView(ViewIds.LIST + "", ListView.class);
 		navi.addView(ViewIds.CONTAINER + "", ContainerView.class);
 		navi.addView(ViewIds.FORK + "", ForkView.class);
+		navi.addView(ViewIds.PREVIEW + "", PreviewView.class);
 
 		navi.addViewChangeListener(e -> {
 

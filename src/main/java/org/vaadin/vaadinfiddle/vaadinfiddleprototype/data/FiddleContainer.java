@@ -1,5 +1,6 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.data;
 
+import java.io.File;
 import java.util.List;
 
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
@@ -66,7 +67,7 @@ public class FiddleContainer {
 	public String getName() {
 		return containerInfo.getName();
 	}
-	
+
 	public boolean isRunning() {
 		return containerInfo.getState().getRunning();
 	}
@@ -75,7 +76,7 @@ public class FiddleContainer {
 		String status = containerInfo.getState().getStatus();
 		return status.equals("created");
 	}
-	
+
 	public static int getFiddlePort(Container container) {
 		ContainerPort[] ports = container.getPorts();
 		for (ContainerPort p : ports) {
@@ -84,6 +85,10 @@ public class FiddleContainer {
 			}
 		}
 		return -1;
+	}
+
+	public File getFiddleDirectory() {
+		return new File(getFiddleAppPath());
 	}
 
 }
