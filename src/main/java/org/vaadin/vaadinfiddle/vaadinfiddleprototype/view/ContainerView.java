@@ -36,104 +36,46 @@ import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
 import com.vaadin.data.ValidationException;
 import com.vaadin.event.ShortcutAction.KeyCode;
-import com.vaadin.event.ShortcutAction.ModifierKey;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.BrowserWindowOpener;
 import com.vaadin.server.ExternalResource;
-import com.vaadin.server.FontAwesome;
 import com.vaadin.server.Page;
-import com.vaadin.server.ThemeResource;
-import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.BrowserFrame;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.CssLayout;
-import com.vaadin.ui.CustomComponent;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.HorizontalSplitPanel;
-import com.vaadin.ui.Image;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.Layout;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
-import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.VerticalSplitPanel;
 import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.ValoTheme;
 
-public class ContainerView extends CustomComponent implements View {
+public class ContainerView extends ContainerDesign implements View {
 
-	private TabSheet editorTabs;
 	private FiddleContainer fiddleContainer;
 	private String dockerId;
 	private BiMap<File, Component> fileToEditorMap = HashBiMap.create();
-	private VerticalSplitPanel editorTabsAndConsole;
-	private HorizontalSplitPanel mainAreaAndFiddleResult;
 	private boolean startedMessageShown = false;
-	private TreeWithContextMenu<File> tree;
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 	private List<File> expandedDirectories = new ArrayList<>();
 	private File selectedFile;
+	private String fileToSelect;
 
 	@Override
 	public void enter(ViewChangeEvent event) {
-		setSizeFull();
-
-		addStyleName("container-view");
-
-		String params = event.getParameters();
-		int idFileSplit = params.indexOf("/");
-		String fileToSelect = null;
-		if (idFileSplit != -1) {
-			dockerId = params.substring(0, idFileSplit);
-			fileToSelect = params.substring(idFileSplit);
-		} else {
-			dockerId = params;
-		}
+		parseParameters(event.getParameters());
 
 		if (!FiddleSession.getCurrent().ownsContainer(dockerId)) {
 			UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + dockerId);
 			return;
 		}
 
-		HorizontalSplitPanel editorSplit = new HorizontalSplitPanel();
-		Layout actionsForCurrentFiddle = new CssLayout();
-		actionsForCurrentFiddle.addStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
-
-		Image logo = new Image(null, new ThemeResource("VaadinFiddle.png"));
-		logo.setWidth("252px");
-		logo.setHeight("66px");
-		Label forkLabel = new Label(
-				"<a href=\"https://github.com/Wnt/vaadin-fiddle\" class=\"github-corner\" aria-label=\"View source on Github\"><svg width=\"80\" height=\"80\" viewBox=\"0 0 250 250\" style=\"fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;\" aria-hidden=\"true\"><path d=\"M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z\"></path><path d=\"M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2\" fill=\"currentColor\" style=\"transform-origin: 130px 106px;\" class=\"octo-arm\"></path><path d=\"M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z\" fill=\"currentColor\" class=\"octo-body\"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>",
-				ContentMode.HTML);
-
-		CssLayout toolbar = new CssLayout(actionsForCurrentFiddle);
-		toolbar.addStyleName("tools");
-		HorizontalLayout topBar = new HorizontalLayout(toolbar, logo, forkLabel);
-		topBar.setComponentAlignment(logo, Alignment.TOP_CENTER);
-		topBar.setComponentAlignment(forkLabel, Alignment.TOP_RIGHT);
-		topBar.setWidth("100%");
-
-		VerticalLayout rootLayout = new VerticalLayout(topBar, editorSplit);
-		rootLayout.setMargin(false);
-		setCompositionRoot(rootLayout);
-		rootLayout.setExpandRatio(editorSplit, 1);
-		rootLayout.setSizeFull();
-
-		editorSplit.setSizeFull();
-
-		editorSplit.setSplitPosition(250, Unit.PIXELS);
-
-		Button saveButton = new Button("Save", FontAwesome.SAVE);
-		saveButton.setDescription("Save all open files (Ctrl + Enter)");
 		saveButton.addClickListener(e -> {
 			saveAllFiles();
 			restartJetty();
@@ -143,46 +85,29 @@ public class ContainerView extends CustomComponent implements View {
 			notification.setDelayMsec(1000);
 			notification.show(Page.getCurrent());
 		});
-		actionsForCurrentFiddle.addComponent(saveButton);
-		saveButton.setClickShortcut(KeyCode.ENTER, ModifierKey.CTRL);
-
-		Button forkButton = new Button("Fork", VaadinIcons.COPY_O);
-		forkButton.setDescription("Create a copy of the currently saved state");
 
 		BrowserWindowOpener opener = new BrowserWindowOpener("#!fork/" + dockerId);
 		opener.extend(forkButton);
 
-		actionsForCurrentFiddle.addComponent(forkButton);
-
-		Button newButton = new Button("New", VaadinIcons.FILE_ADD);
 		newButton.setDescription("Create a new fiddle (Alt + N)");
 		newButton.addClickListener(e -> {
 			getUI().getNavigator().navigateTo("");
 		});
-		toolbar.addComponent(newButton);
-		newButton.setClickShortcut(KeyCode.N, ModifierKey.ALT);
 
 		readContainerInfo();
 		updateTitle();
 
-		FiddleUi.getDockerservice().setOwner(dockerId, UI.getCurrent());
+		populateTree();
+		getTree().setItemCaptionGenerator(File::getName);
 
-		File fiddleDirectory = getFiddleDirectory();
-
-		tree = new TreeWithContextMenu();
-		tree.setStyleName("file-picker");
-		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
-		tree.setDataProvider(fp);
-		tree.setItemCaptionGenerator(File::getName);
-
-		tree.addExpandListener(expandEvent -> {
+		getTree().addExpandListener(expandEvent -> {
 			expandedDirectories.add(expandEvent.getExpandedItem());
 		});
-		tree.addCollapseListener(collapseEvent -> {
+		getTree().addCollapseListener(collapseEvent -> {
 			expandedDirectories.remove(collapseEvent.getCollapsedItem());
 		});
 
-		tree.setItemIconGenerator(file -> {
+		getTree().setItemIconGenerator(file -> {
 			if (file.isDirectory()) {
 				if (expandedDirectories.contains(file)) {
 					return VaadinIcons.FOLDER_OPEN_O;
@@ -197,18 +122,6 @@ public class ContainerView extends CustomComponent implements View {
 		});
 
 		createTreeContextMenu();
-
-		editorSplit.setFirstComponent(tree);
-		tree.setSizeFull();
-		editorTabs = new TabSheet();
-		editorTabsAndConsole = new VerticalSplitPanel(editorTabs, null);
-		editorTabsAndConsole.setSizeFull();
-		mainAreaAndFiddleResult = new HorizontalSplitPanel(editorTabsAndConsole, null);
-		mainAreaAndFiddleResult.setSplitPosition(100, Unit.PERCENTAGE);
-		editorSplit.setSecondComponent(mainAreaAndFiddleResult);
-		editorTabsAndConsole.setSizeFull();
-		editorTabsAndConsole.setSplitPosition(100, Unit.PERCENTAGE);
-		editorTabsAndConsole.addStyleName("editor-tabs-and-console");
 
 		// TODO use closehandler that checks for unsaved modifications
 		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
@@ -232,8 +145,8 @@ public class ContainerView extends CustomComponent implements View {
 			updateTitle();
 		});
 
-		tree.addSelectionListener(e -> {
-			File selectedFile = tree.asSingleSelect().getValue();
+		getTree().addSelectionListener(e -> {
+			File selectedFile = getTree().asSingleSelect().getValue();
 			if (selectedFile == null || selectedFile.isDirectory()) {
 				return;
 			}
@@ -246,11 +159,11 @@ public class ContainerView extends CustomComponent implements View {
 			expandAndSelectFirstJavaFile();
 		}
 
-		tree.addExpandListener(e -> {
+		getTree().addExpandListener(e -> {
 			File[] children = e.getExpandedItem().listFiles();
 			if (children.length == 1) {
 				for (File child : children) {
-					tree.expand(child);
+					getTree().expand(child);
 				}
 			}
 		});
@@ -281,8 +194,36 @@ public class ContainerView extends CustomComponent implements View {
 		}
 	}
 
+	private void populateTree() {
+		File fiddleDirectory = getFiddleDirectory();
+
+		FileSystemProvider fp = new FileSystemProvider(fiddleDirectory);
+		getTree().setDataProvider(fp);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected TreeWithContextMenu<File> getTree() {
+		return tree;
+	}
+
+	/**
+	 * Parses view enter parameters into fileToSelect and dockerId fields
+	 * 
+	 * @param params
+	 */
+	private void parseParameters(String params) {
+		int idFileSplit = params.indexOf("/");
+		fileToSelect = null;
+		if (idFileSplit != -1) {
+			dockerId = params.substring(0, idFileSplit);
+			fileToSelect = params.substring(idFileSplit);
+		} else {
+			dockerId = params;
+		}
+	}
+
 	private void createTreeContextMenu() {
-		GridContextMenu<File> contextMenu = tree.getContextMenu();
+		GridContextMenu<File> contextMenu = getTree().getContextMenu();
 		contextMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
 	}
 
@@ -339,8 +280,13 @@ public class ContainerView extends CustomComponent implements View {
 				} else {
 					f.delete();
 				}
-				// TODO re-init view without a navigation event
-				UI.getCurrent().getNavigator().navigateTo(ViewIds.CONTAINER + "/" + dockerId);
+				populateTree();
+				Component tab = fileToEditorMap.get(f);
+				if (tab != null) {
+					editorTabs.removeComponent(tab);
+				}
+				expandAndSelectFile(
+						selectedFile.getAbsolutePath().substring(getFiddleDirectory().getAbsolutePath().length()));
 			});
 			removeFile.setStyleName(ValoTheme.BUTTON_DANGER);
 		} else {
@@ -394,11 +340,11 @@ public class ContainerView extends CustomComponent implements View {
 				continue;
 			}
 			String pathname = absolutePath + parentPath + "/" + pathPart;
-			tree.expand(new File(pathname));
+			getTree().expand(new File(pathname));
 			parentPath += "/" + pathPart;
 		}
 
-		tree.select(new File(absolutePath + "/" + parentPath));
+		getTree().select(new File(absolutePath + "/" + parentPath));
 
 	}
 
