@@ -33,7 +33,7 @@ public class FileSystemProvider
 
     @Override
     public boolean hasChildren(File item) {
-        return item.isDirectory();
+        return item.isDirectory() && item.listFiles().length > 0;
     }
 
     @Override
