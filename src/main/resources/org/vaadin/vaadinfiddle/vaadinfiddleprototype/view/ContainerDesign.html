@@ -10,7 +10,7 @@
  <body>
   <vaadin-vertical-layout size-full margin="false">
    <vaadin-horizontal-layout width-full>
-    <vaadin-css-layout style-name="tools">
+    <vaadin-css-layout style-name="tools" :expand>
      <vaadin-css-layout style-name="v-component-group">
       <vaadin-button icon="fonticon://FontAwesome/f0c7" description="Save all open files (Ctrl + Enter)" plain-text click-shortcut="ctrl-enter" _id="saveButton">
         Save 
@@ -18,13 +18,16 @@
       <vaadin-button icon="fonticon://Vaadin-Icons/e7d4" description="Create a copy of the currently saved state" plain-text _id="forkButton">
         Fork 
       </vaadin-button>
+      <vaadin-button icon="fonticon://Vaadin-Icons/e76c" description="Share a link to this fiddle" plain-text _id="shareButton">
+        Share 
+      </vaadin-button>
      </vaadin-css-layout>
      <vaadin-button icon="fonticon://Vaadin-Icons/e929" description="Create a new fiddle (Alt + N)" plain-text click-shortcut="alt-n" _id="newButton">
        New 
      </vaadin-button>
     </vaadin-css-layout>
     <vaadin-image source="theme://VaadinFiddle.png" width="252px" height="66px" :center></vaadin-image>
-    <vaadin-label :right>
+    <vaadin-label :right :expand>
      <a href="https://github.com/Wnt/vaadin-fiddle" class="github-corner" aria-label="View source on Github">
       <svg width="80" height="80" viewbox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -38,8 +41,7 @@
     <org_vaadin_vaadinfiddle_vaadinfiddleprototype_components-tree-with-context-menu style-name="file-picker" size-full data-item-type="java.io.File" _id="tree"></org_vaadin_vaadinfiddle_vaadinfiddleprototype_components-tree-with-context-menu>
     <vaadin-horizontal-split-panel split-position="100%" _id="mainAreaAndFiddleResult">
      <vaadin-vertical-split-panel style-name="editor-tabs-and-console" split-position="100%" _id="editorTabsAndConsole">
-      <vaadin-tab-sheet size-full _id="editorTabs">
-      </vaadin-tab-sheet>
+      <vaadin-tab-sheet size-full _id="editorTabs"></vaadin-tab-sheet>
      </vaadin-vertical-split-panel>
     </vaadin-horizontal-split-panel>
    </vaadin-horizontal-split-panel>

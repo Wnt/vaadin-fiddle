@@ -24,6 +24,7 @@ import org.vaadin.vaadinfiddle.vaadinfiddleprototype.components.TreeWithContextM
 public class ContainerDesign extends VerticalLayout {
 	protected Button saveButton;
 	protected Button forkButton;
+	protected Button shareButton;
 	protected Button newButton;
 	protected TreeWithContextMenu tree;
 	protected HorizontalSplitPanel mainAreaAndFiddleResult;

@@ -51,7 +51,9 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.Panel;
+import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TabSheet.Tab;
+import com.vaadin.ui.TextArea;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
@@ -90,6 +92,59 @@ public class ContainerView extends ContainerDesign implements View {
 
 		BrowserWindowOpener opener = new BrowserWindowOpener("#!fork/" + dockerId);
 		opener.extend(forkButton);
+
+		shareButton.addClickListener(e -> {
+			Window window = new Window("Share preview");
+
+			URI location = Page.getCurrent().getLocation();
+			String host = location.getHost();
+			String scheme = location.getScheme();
+			String frameURL = scheme + "://" + host + "/editor/#!" + ViewIds.PREVIEW + "/" + fiddleContainer.getId()
+					+ getSelectedFileRelativePath();
+			BrowserFrame frame = new BrowserFrame("Preview", new ExternalResource(frameURL));
+
+			frame.setWidth("800px");
+			frame.setHeight("355px");
+			TextArea iframeField = new TextArea(null,
+					"<iframe src=\"" + frameURL + "\" width=\"560\" height=\"315\" frameborder=\"0\"></iframe> ");
+			iframeField.setRows(2);
+			iframeField.setWidth("100%");
+			VerticalLayout embed = new VerticalLayout(iframeField, frame);
+			embed.setSizeFull();
+			embed.setExpandRatio(frame, 1);
+			embed.setComponentAlignment(frame, Alignment.MIDDLE_CENTER);
+			embed.setCaption("Embed");
+
+			String imgURL = scheme + "://" + host + "/img-preview/?" + ViewIds.PREVIEW + "/" + fiddleContainer.getId()
+					+ getSelectedFileRelativePath();
+			TextArea bbcodeField = new TextArea(null, "[url=" + frameURL + "][img]" + imgURL + "[/img][/url]");
+			bbcodeField.setRows(2);
+			bbcodeField.setWidth("100%");
+
+			BrowserFrame imgPreview = new BrowserFrame("Preview", new ExternalResource(frameURL));
+
+			imgPreview.setWidth("800px");
+			imgPreview.setHeight("355px");
+			VerticalLayout bbcode = new VerticalLayout(bbcodeField, imgPreview);
+			bbcode.setSizeFull();
+			bbcode.setExpandRatio(imgPreview, 1);
+			bbcode.setComponentAlignment(imgPreview, Alignment.MIDDLE_CENTER);
+			bbcode.setCaption("BBCode");
+			TabSheet tabs = new TabSheet();
+			tabs.addTab(bbcode).setDescription("Usable on most discussion forums etc.");
+			tabs.addTab(embed).setDescription("Usable on blogs, webpages etc.");
+			TextArea url = new TextArea("URL", frameURL);
+			url.setRows(2);
+			url.setWidth("100%");
+			tabs.addTab(url).setDescription("Usable anywhere!");
+			tabs.setSizeFull();
+			window.setContent(tabs);
+
+			UI.getCurrent().addWindow(window);
+			window.center();
+			window.setWidth("850px");
+			window.setHeight("560px");
+		});
 
 		newButton.setDescription("Create a new fiddle (Alt + N)");
 		newButton.addClickListener(e -> {
@@ -345,7 +400,11 @@ public class ContainerView extends ContainerDesign implements View {
 		if (tab != null) {
 			editorTabs.removeComponent(tab);
 		}
-		expandAndSelectFile(selectedFile.getAbsolutePath().substring(getFiddleDirectory().getAbsolutePath().length()));
+		expandAndSelectFile(getSelectedFileRelativePath());
+	}
+
+	private String getSelectedFileRelativePath() {
+		return selectedFile.getAbsolutePath().substring(getFiddleDirectory().getAbsolutePath().length());
 	}
 
 	/**
