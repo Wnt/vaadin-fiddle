@@ -61,14 +61,14 @@ public class ShareDialog extends Window {
 	}
 
 	private VerticalLayout createBBCodeTab() {
-		String imgURL = scheme + "://" + host + "/img-preview/?" + ViewIds.PREVIEW + "/" + fiddleContainer.getId()
-				+ selectedFile;
+		String imageName = selectedFile + ".png";
+		String imgURL = scheme + "://" + host + "/editor/VAADIN/img/" + imageName;
 		TextArea bbcodeField = new TextArea(null, "[url=" + frameURL + "][img]" + imgURL + "[/img][/url]");
 		bbcodeField.setRows(2);
 		bbcodeField.setWidth("100%");
 
-		Component imgPreview = new PreviewImage(frameURL, fiddleContainer.getId()
-				+ selectedFile+".png");
+		imageName = imageName.replace('/', '_');
+		Component imgPreview = new PreviewImage(frameURL, fiddleContainer.getId() + imageName);
 		imgPreview.setCaption("Preview");
 
 		imgPreview.setWidth("800px");

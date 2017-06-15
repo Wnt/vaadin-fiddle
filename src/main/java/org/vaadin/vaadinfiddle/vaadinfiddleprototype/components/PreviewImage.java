@@ -2,6 +2,7 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.components;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.vaadin.server.ExternalResource;
@@ -15,7 +16,6 @@ import com.vaadin.ui.VerticalLayout;
 
 public class PreviewImage extends CustomComponent {
 	public PreviewImage(String frameURL, String imageName) {
-		String imgFilename = imageName.replace('/', '_');
 		ProgressBar progressBar = new ProgressBar();
 		progressBar.setIndeterminate(true);
 		Label waitLabel = new Label("Generating preview image");
@@ -33,8 +33,16 @@ public class PreviewImage extends CustomComponent {
 		}
 
 		Thread imgGeneratorThread = new Thread(() -> {
-			ProcessBuilder builder = new ProcessBuilder("phantomjs", "src/main/resources/screenshot.js", frameURL,
-					targetDirPath + "/" + imgFilename);
+			//TODO auto-detect paths from environment
+			// deployment time paths
+			String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
+			String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
+			// Development time paths
+			// String phantomJsExecutable = "phantomjs";
+			// String pathToScreenshotScript = "src/main/resources/screenshot.js";
+			ProcessBuilder builder = new ProcessBuilder(phantomJsExecutable, pathToScreenshotScript, frameURL,
+					targetDirPath + "/" + imageName);
+
 			boolean success = false;
 			try {
 				Process process = builder.start();
@@ -44,7 +52,10 @@ public class PreviewImage extends CustomComponent {
 			}
 			if (success) {
 				getUI().access(() -> {
-					setCompositionRoot(new Image(null, new ExternalResource("vaadin://img/" + imgFilename)));
+					Image img = new Image(null, new ExternalResource("vaadin://img/" + imageName));
+					img.setWidth("800px");
+					img.setHeight("355px");
+					setCompositionRoot(img);
 				});
 			} else {
 				getUI().access(() -> {

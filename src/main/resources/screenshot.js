@@ -1,8 +1,8 @@
 "use strict";
 var page = require('webpage').create(),
 system = require('system'),
-pageWidth = 800,
-pageHeight = 355,
+pageWidth = 1067,
+pageHeight = 473,
 address, output;
 
 if (system.args.length < 3 || system.args.length > 3) {
@@ -12,8 +12,7 @@ if (system.args.length < 3 || system.args.length > 3) {
   address = system.args[1];
   output = system.args[2];
   page.viewportSize = { width: pageWidth, height: pageHeight };
-  page.zoomFactor = 0.75;
-  // page.clipRect = { top: 0, left: 0, width: pageWidth, height: pageHeight };
+  //page.zoomFactor = 0.75;
 
   page.open(address, function (status) {
     if (status !== 'success') {
