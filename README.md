@@ -152,4 +152,8 @@ then run:
 sudo systemctl daemon-reload
 sudo systemctl restart docker.service
 ```
-to restart the service
+to restart the service.
+## Optional: install PhantomJS to enable share previews
+```
+sudo apt install phantomjs
+```

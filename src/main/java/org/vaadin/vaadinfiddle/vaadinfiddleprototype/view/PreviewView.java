@@ -56,7 +56,7 @@ public class PreviewView extends CustomComponent implements View {
 		codeMirrorField.setLineNumbers(false);
 		codeMirrorField.removeGutter("CodeMirror-linenumbers");
 		codeMirrorField.removeGutter("CodeMirror-foldgutter");
-		
+
 		codeMirrorField.setSizeFull();
 		
 		String fileName = selectedFile.getName();
@@ -65,15 +65,16 @@ public class PreviewView extends CustomComponent implements View {
 		Binder<File> binder = new Binder<File>();
 		BindingBuilder<File, String> bb = binder.forField(codeMirrorField);
 
-		Binding<File, String> binding = bb.bind(new FileToStringValueProvider(), (file, value) -> {});
+		bb.bind(new FileToStringValueProvider(), (file, value) -> {});
 		binder.readBean(selectedFile);
 
 		URI location = Page.getCurrent().getLocation();
 		String host = location.getHost();
 		String scheme = location.getScheme();
-		BrowserFrame frame = new BrowserFrame("",
+		BrowserFrame frame = new BrowserFrame(null,
 				new ExternalResource(scheme + "://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
+		frame.setId("result-frame");
 
 		HorizontalLayout rootHorizontalSplit = new HorizontalLayout(codeMirrorField, frame);
 		rootHorizontalSplit.setSizeFull();
@@ -82,6 +83,8 @@ public class PreviewView extends CustomComponent implements View {
 		setCompositionRoot(rootLaytout);
 		setSizeFull();
 		addStyleName("preview-view");
+		addStyleName("scale-down");
+		setId("preview-view");
 	}
 
 	private void readContainerInfo() {

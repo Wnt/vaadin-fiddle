@@ -21,8 +21,8 @@
   .tools {
     margin: 14px;
     > div {
-	  margin-right: 14px;
-	}
+      margin-right: 14px;
+    }
   }
   .editor-tabs-and-console > div > .v-splitpanel-first-container {
     overflow: hidden;
@@ -37,10 +37,26 @@
     color: red;
   }
   .preview-view {
-    transform: scale(0.75);
-    width: 132% !important;
-    height: 132% !important;
-    left: -16%;
-    top: -16%;
+    .CodeMirror {
+      font-size: 10pt;
+    }
+  }
+  .preview-view.scale-down {
+    .CodeMirror {
+      font-size: 8pt;
+      .CodeMirror-vscrollbar {
+        display: none !important;
+      }
+    }
+  }
+  .preview-view.scale-down {
+    #result-frame {
+      transform: scale(0.75);
+      width: 132% !important;
+      height: 132% !important;
+      left: -16%;
+      top: -16%;
+      position: absolute;
+    }
   }
 }
