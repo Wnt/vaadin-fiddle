@@ -62,12 +62,13 @@ public class ShareDialog extends Window {
 
 	private VerticalLayout createBBCodeTab() {
 		String imageName = selectedFile + ".png";
+		imageName = imageName.replace('/', '_');
+		
 		String imgURL = scheme + "://" + host + "/editor/VAADIN/img/" + imageName;
 		TextArea bbcodeField = new TextArea(null, "[url=" + frameURL + "][img]" + imgURL + "[/img][/url]");
 		bbcodeField.setRows(2);
 		bbcodeField.setWidth("100%");
 
-		imageName = imageName.replace('/', '_');
 		Component imgPreview = new PreviewImage(frameURL, fiddleContainer.getId() + imageName);
 		imgPreview.setCaption("Preview");
 
