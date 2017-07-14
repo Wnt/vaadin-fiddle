@@ -20,6 +20,8 @@ public class FileTypeUtil {
 			return "text/x-scss";
 		case ".js":
 			return "text/javascript";
+		case ".kt":
+			return "text/x-kotlin";
 		default:
 			return "";
 		}
