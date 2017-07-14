@@ -233,7 +233,7 @@ public class DockerService {
 		DockerClient throwAwayDockerClient = DockerClientBuilder.getInstance(configBuilder.build()).build();
 
 		ExecCreateCmd cmdBuild = throwAwayDockerClient.execCreateCmd(id).withCmd("su", "vaadin", "-c",
-				"cd /webapp/fiddleapp; mvn jetty:run");
+				"cd /webapp/fiddleapp; mvn clean jetty:run");
 		if (stdout != null) {
 			cmd = cmdBuild.withAttachStdout(true).exec();
 
