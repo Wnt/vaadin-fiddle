@@ -523,14 +523,17 @@ public class ContainerView extends ContainerDesign implements View {
 
 	private void expandAndSelectFirstJavaFile() {
 		File fiddleDirectory = getFiddleDirectory();
-		File javaFile = findFirstJavaFile(fiddleDirectory);
-		if (javaFile == null) {
+		File codeFile = FileTypeUtil.findFirstFileWithExtension(fiddleDirectory, ".java");
+		if (codeFile == null) {
+			codeFile = FileTypeUtil.findFirstFileWithExtension(fiddleDirectory, ".kt");
+		}
+		if (codeFile == null) {
 			return;
 		}
 
 		ArrayList<File> pathToJava = new ArrayList<>();
 
-		File fs = javaFile;
+		File fs = codeFile;
 
 		while (!fs.getParentFile().equals(fiddleDirectory)) {
 			pathToJava.add(fs.getParentFile());
@@ -540,32 +543,11 @@ public class ContainerView extends ContainerDesign implements View {
 			tree.expand(pathToJava.get(i));
 		}
 
-		tree.select(javaFile);
+		tree.select(codeFile);
 	}
 
 	private File getFiddleDirectory() {
 		return fiddleContainer.getFiddleDirectory();
-	}
-
-	private File findFirstJavaFile(File directory) {
-
-		FileFilter fileFilter = new WildcardFileFilter("*.java");
-		File[] files = directory.listFiles(fileFilter);
-
-		if (files.length > 0) {
-			return files[0];
-		} else {
-			for (File file : directory.listFiles()) {
-				if (file.isDirectory()) {
-					File subJava = findFirstJavaFile(file);
-					if (subJava != null) {
-						return subJava;
-					}
-				}
-			}
-		}
-		return null;
-
 	}
 
 	private void readContainerInfo() {

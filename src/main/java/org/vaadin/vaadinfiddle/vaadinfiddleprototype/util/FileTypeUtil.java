@@ -1,5 +1,10 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.util;
 
+import java.io.File;
+import java.io.FileFilter;
+
+import org.apache.commons.io.filefilter.WildcardFileFilter;
+
 public class FileTypeUtil {
 	public static String getMimeTypeByFileExtension(String name) {
 		int lastIndexOf = name.lastIndexOf('.');
@@ -25,6 +30,26 @@ public class FileTypeUtil {
 		default:
 			return "";
 		}
+	}
+
+	public static File findFirstFileWithExtension(File directory, String extension) {
+		FileFilter fileFilter = new WildcardFileFilter("*" + extension);
+		File[] files = directory.listFiles(fileFilter);
+
+		if (files.length > 0) {
+			return files[0];
+		} else {
+			for (File file : directory.listFiles()) {
+				if (file.isDirectory()) {
+					File subDirFile = findFirstFileWithExtension(file, extension);
+					if (subDirFile != null) {
+						return subDirFile;
+					}
+				}
+			}
+		}
+		return null;
+
 	}
 
 }
