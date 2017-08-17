@@ -2,16 +2,17 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileToStringValueProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileTypeUtil;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.StringToFileSetter;
 
 import com.vaadin.data.Binder;
-import com.vaadin.data.Binder.Binding;
 import com.vaadin.data.Binder.BindingBuilder;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
@@ -74,7 +75,14 @@ public class PreviewView extends CustomComponent implements View {
 		BrowserFrame frame = new BrowserFrame(null,
 				new ExternalResource(scheme + "://" + host + "/container/" + fiddleContainer.getId()));
 		frame.setSizeFull();
-		frame.setId("result-frame");
+
+        Map<String, String> queryParameters = parseQueryParameters(location);
+
+        if (queryParameters.containsKey("zoom") && queryParameters.get("zoom").equals("false")) {
+            frame.setId("result-frame-no-zoom");
+        } else {
+            frame.setId("result-frame"); // by default zoom stays enabled
+        }
 
 		HorizontalLayout rootHorizontalSplit = new HorizontalLayout(codeMirrorField, frame);
 		rootHorizontalSplit.setSizeFull();
@@ -87,9 +95,9 @@ public class PreviewView extends CustomComponent implements View {
 		setId("preview-view");
 	}
 
-	private void readContainerInfo() {
-		fiddleContainer = FiddleUi.getDockerservice().getFiddleContainerById(dockerId);
-	}
+    private void readContainerInfo() {
+        fiddleContainer = FiddleUi.getDockerservice().getFiddleContainerById(dockerId);
+    }
 
 	/**
 	 * Parses view enter parameters into fileToSelect and dockerId fields
@@ -106,4 +114,17 @@ public class PreviewView extends CustomComponent implements View {
 			dockerId = params;
 		}
 	}
+
+    /**
+     * A map because access to keys is easy and no filtering is required, needs more memory though
+     *
+     * @param uri
+     * @return
+     */
+    private Map<String, String> parseQueryParameters(URI uri) {
+        return Arrays.stream(uri.getQuery().split("&"))
+                .map(s -> Arrays.asList(s.split("=")))
+                .filter(strings -> strings.size() == 2)
+                .collect(Collectors.toMap(o -> o.get(0), o -> o.get(1)));
+    }
 }
