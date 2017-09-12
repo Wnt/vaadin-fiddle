@@ -7,10 +7,12 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -298,5 +300,17 @@ public class DockerService {
 	private InspectContainerResponse getContainerInfoById(String id) {
 		InspectContainerResponse containerInfo = dockerClient.inspectContainerCmd(id).exec();
 		return containerInfo;
+	}
+
+	public void unregisterUI(FiddleUi fiddleUi) {
+		ArrayList<String> toUnregister = new ArrayList<>(); 
+		for ( Entry<String, UI> entry : containerOwnerUis.entrySet()) {
+			if (entry.getValue() == fiddleUi) {
+				toUnregister.add(entry.getKey());
+			}
+		}
+		for (String string : toUnregister) {
+			containerOwnerUis.remove(string);
+		}
 	}
 }

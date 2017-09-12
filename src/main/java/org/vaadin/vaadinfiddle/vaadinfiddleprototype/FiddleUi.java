@@ -89,4 +89,9 @@ public class FiddleUi extends UI {
 
 		}
 	}
+	@Override
+	public void detach() {
+		super.detach();
+		FiddleUi.getDockerservice().unregisterUI(this);
+	}
 }
