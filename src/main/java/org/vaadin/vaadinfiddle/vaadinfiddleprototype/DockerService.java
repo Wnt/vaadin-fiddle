@@ -33,6 +33,7 @@ import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports.Binding;
+import com.github.dockerjava.api.model.Ulimit;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
@@ -68,6 +69,10 @@ public class DockerService {
 		CreateContainerResponse container = containerStub
 
 				.withVolumes(volume)
+				
+				.withUlimits(new Ulimit("nproc", 1024, 1024))
+				
+				.withMemory(1024l*1024l*512l)
 
 				.exec();
 		return container;
