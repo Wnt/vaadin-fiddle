@@ -47,7 +47,9 @@ import com.vaadin.ui.UI;
 
 public class DockerService {
 
-	public static final int MAX_RUNNING_CONTAINERS = 4;
+	private static final String IMAGE_NAME = "vaadin-stub";
+	private static final long MEMORY_LIMIT = 1024l*1024l*384l;
+	public static final int MAX_RUNNING_CONTAINERS = 2;
 	final private DockerClient dockerClient;
 	private List<String> runningContainers = new CopyOnWriteArrayList<>();
 
@@ -71,12 +73,16 @@ public class DockerService {
 
 				.withVolumes(volume)
 				
-				.withUlimits(new Ulimit("nproc", 1024, 1024))
+				.withUlimits(getUlimits())
 				
-				.withMemory(1024l*1024l*512l)
+				.withMemory(MEMORY_LIMIT)
 
 				.exec();
 		return container;
+	}
+
+	private Ulimit getUlimits() {
+		return new Ulimit("nproc", 1024, 1024);
 	}
 
 	private CreateContainerCmd createContainerStub() {
@@ -84,13 +90,17 @@ public class DockerService {
 		PortBinding portBinding = new PortBinding(new Binding(null, null), exposedPort);
 		return dockerClient
 
-				.createContainerCmd("vaadin-stub")
+				.createContainerCmd(IMAGE_NAME)
 
 				.withCmd("bash")
 
 				.withTty(true)
 
 				.withPortBindings(portBinding)
+				
+				.withUlimits(getUlimits())
+				
+				.withMemory(MEMORY_LIMIT)
 
 				.withExposedPorts(exposedPort);
 	}
@@ -114,7 +124,7 @@ public class DockerService {
 
 		Volume volume = new Volume("/webapp/fiddleapp");
 		Bind volumeBind = new Bind(datadirClone, volume);
-
+		
 		CreateContainerResponse container = containerStub
 
 				.withBinds(volumeBind)
@@ -229,11 +239,9 @@ public class DockerService {
 		runningContainers.add(id);
 	}
 
-	public void runJetty(String id) {
-		runJetty(id, null);
-	}
+	public void runJetty(String id, OutputStream stdout, UI owner) {
 
-	public void runJetty(String id, OutputStream stdout) {
+		setOwner(id, owner);
 		ExecCreateCmdResponse cmd;
 		ExecStartResultCallback resultCallback;
 
@@ -270,8 +278,7 @@ public class DockerService {
 
 		dockerClient.restartContainerCmd(id).exec();
 		reactivateContainer(id);
-		runJetty(id, os);
-		setOwner(id, owner);
+		runJetty(id, os,owner);
 
 		configureProxy(id);
 	}

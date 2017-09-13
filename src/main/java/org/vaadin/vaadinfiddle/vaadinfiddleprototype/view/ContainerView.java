@@ -1,7 +1,6 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.view;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
 import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
@@ -189,7 +187,7 @@ public class ContainerView extends ContainerDesign implements View {
 
 			readContainerInfo();
 
-			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel());
+			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel(), UI.getCurrent());
 
 		} else {
 			startupNotification = new Notification("Waking up",
