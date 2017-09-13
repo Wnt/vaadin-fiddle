@@ -242,7 +242,7 @@ public class ContainerView extends ContainerDesign implements View {
 
 	private void createTreeContextMenu() {
 		GridContextMenu<File> contextMenu = getTree().getContextMenu();
-		contextMenu.addGridBodyContextMenuListener(this::updateTreeMenu);
+		contextMenu.addGridBodyContextMenuListener(this::onContextMenuOpen);
 	}
 
 	/**
@@ -250,11 +250,13 @@ public class ContainerView extends ContainerDesign implements View {
 	 * 
 	 * @param contextEvent
 	 */
-	private void updateTreeMenu(GridContextMenuOpenEvent<File> contextEvent) {
+	private void onContextMenuOpen(GridContextMenuOpenEvent<File> contextEvent) {
 		contextEvent.getContextMenu().removeItems();
 
 		if (contextEvent.getItem() != null) {
 			File f = (File) contextEvent.getItem();
+			
+			getTree().select(f);
 
 			File dir = f.isDirectory() ? f : f.getParentFile();
 			String dirAbbrev = StringUtils.abbreviate(dir.getName(), 12);
