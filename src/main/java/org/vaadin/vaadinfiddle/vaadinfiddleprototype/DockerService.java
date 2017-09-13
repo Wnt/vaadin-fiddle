@@ -49,7 +49,7 @@ public class DockerService {
 
 	private static final String IMAGE_NAME = "vaadin-stub";
 	private static final long MEMORY_LIMIT = 1024l*1024l*384l;
-	public static final int MAX_RUNNING_CONTAINERS = 2;
+	public static final int MAX_RUNNING_CONTAINERS = 4;
 	final private DockerClient dockerClient;
 	private List<String> runningContainers = new CopyOnWriteArrayList<>();
 
