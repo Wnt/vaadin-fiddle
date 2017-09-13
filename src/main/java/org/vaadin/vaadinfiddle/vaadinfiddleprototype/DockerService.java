@@ -47,8 +47,8 @@ import com.vaadin.ui.UI;
 
 public class DockerService {
 
-	private static final int CPU_SHARES = 4000000;
-	private static final int CPU_PERIOD = 1000000;
+	private static final int CPU_SHARES = 400000;
+	private static final int CPU_PERIOD = 100000;
 	private static final String IMAGE_NAME = "vaadin-stub";
 	private static final long MEMORY_LIMIT = 1024l * 1024l * 384l;
 	public static final int MAX_RUNNING_CONTAINERS = 4;
