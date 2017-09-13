@@ -15,19 +15,4 @@ public class TreeWithContextMenu<T> extends Tree<T> {
 		return gridContextMenu;
 	}
 
-	// setHeight* methods to workaround vaadin/framework#9629
-	@Override
-	public void setHeight(float height, Unit unit) {
-		getCompositionRoot().setHeight(height, unit);
-	}
-
-	@Override
-	public void setHeight(String height) {
-		getCompositionRoot().setHeight(height);
-	}
-
-	@Override
-	public void setHeightUndefined() {
-		getCompositionRoot().setHeightUndefined();
-	}
 }
