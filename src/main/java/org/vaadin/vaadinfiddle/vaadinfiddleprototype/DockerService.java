@@ -27,6 +27,7 @@ import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse.ContainerState;
 import com.github.dockerjava.api.command.InspectContainerResponse.Mount;
+import com.github.dockerjava.api.command.ListContainersCmd;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
@@ -317,5 +318,11 @@ public class DockerService {
 		for (String string : toUnregister) {
 			containerOwnerUis.remove(string);
 		}
+	}
+
+	public List<Container> getContainers() {
+		ListContainersCmd listCmd = dockerClient.listContainersCmd();
+		List<Container> containerList = listCmd.withShowAll(true).exec();
+		return containerList;
 	}
 }

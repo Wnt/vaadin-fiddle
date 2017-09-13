@@ -7,9 +7,7 @@ import java.util.Map;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.DockerService;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.ListContainersCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
@@ -27,7 +25,6 @@ import com.vaadin.ui.renderers.HtmlRenderer;
 
 public class ListView extends CustomComponent implements View {
 	private VerticalLayout layout;
-	private DockerClient dockerClient;
 	private Grid<Container> grid;
 	private DockerService dockerService;
 
@@ -39,7 +36,6 @@ public class ListView extends CustomComponent implements View {
 		layout.setSizeFull();
 
 		dockerService = FiddleUi.getDockerservice();
-		dockerClient = dockerService.getDockerClient();
 
 		createTestButton();
 
@@ -146,11 +142,11 @@ public class ListView extends CustomComponent implements View {
 	}
 
 	private void refreshList() {
-		ListContainersCmd listCmd = dockerClient.listContainersCmd();
-		ListContainersCmd filteredListCmd = listCmd.withStatusFilter("running");
-		List<Container> containerList = filteredListCmd.exec();
+		List<Container> containerList = dockerService.getContainers();
 		grid.setItems(containerList);
 	}
+
+	
 
 	@Override
 	public void enter(ViewChangeEvent event) {
