@@ -47,8 +47,10 @@ import com.vaadin.ui.UI;
 
 public class DockerService {
 
+	private static final int CPU_SHARES = 8*1000*1000;
+	private static final int CPU_PERIOD = 10*1000*1000;
 	private static final String IMAGE_NAME = "vaadin-stub";
-	private static final long MEMORY_LIMIT = 1024l*1024l*384l;
+	private static final long MEMORY_LIMIT = 1024l * 1024l * 384l;
 	public static final int MAX_RUNNING_CONTAINERS = 4;
 	final private DockerClient dockerClient;
 	private List<String> runningContainers = new CopyOnWriteArrayList<>();
@@ -69,16 +71,24 @@ public class DockerService {
 		CreateContainerCmd containerStub = createContainerStub();
 
 		Volume volume = new Volume("/webapp/fiddleapp");
-		CreateContainerResponse container = containerStub
+		CreateContainerCmd command = containerStub
 
-				.withVolumes(volume)
-				
-				.withUlimits(getUlimits())
-				
-				.withMemory(MEMORY_LIMIT)
+				.withVolumes(volume);
 
-				.exec();
+		setLimits(command);
+
+		CreateContainerResponse container = command.exec();
 		return container;
+	}
+
+	private void setLimits(CreateContainerCmd command) {
+		command.withUlimits(getUlimits())
+
+		.withMemory(MEMORY_LIMIT)
+
+		.withCpuPeriod(CPU_PERIOD)
+
+		.withCpuShares(CPU_SHARES);
 	}
 
 	private Ulimit getUlimits() {
@@ -88,7 +98,7 @@ public class DockerService {
 	private CreateContainerCmd createContainerStub() {
 		ExposedPort exposedPort = new ExposedPort(8080);
 		PortBinding portBinding = new PortBinding(new Binding(null, null), exposedPort);
-		return dockerClient
+		CreateContainerCmd cmd = dockerClient
 
 				.createContainerCmd(IMAGE_NAME)
 
@@ -96,13 +106,10 @@ public class DockerService {
 
 				.withTty(true)
 
-				.withPortBindings(portBinding)
-				
-				.withUlimits(getUlimits())
-				
-				.withMemory(MEMORY_LIMIT)
-
-				.withExposedPorts(exposedPort);
+				.withPortBindings(portBinding).withExposedPorts(exposedPort);
+		setLimits(cmd);
+		
+		return cmd;
 	}
 
 	public String cloneContainer(String id) {
@@ -124,7 +131,7 @@ public class DockerService {
 
 		Volume volume = new Volume("/webapp/fiddleapp");
 		Bind volumeBind = new Bind(datadirClone, volume);
-		
+
 		CreateContainerResponse container = containerStub
 
 				.withBinds(volumeBind)
@@ -278,7 +285,7 @@ public class DockerService {
 
 		dockerClient.restartContainerCmd(id).exec();
 		reactivateContainer(id);
-		runJetty(id, os,owner);
+		runJetty(id, os, owner);
 
 		configureProxy(id);
 	}
@@ -316,8 +323,8 @@ public class DockerService {
 	}
 
 	public void unregisterUI(FiddleUi fiddleUi) {
-		ArrayList<String> toUnregister = new ArrayList<>(); 
-		for ( Entry<String, UI> entry : containerOwnerUis.entrySet()) {
+		ArrayList<String> toUnregister = new ArrayList<>();
+		for (Entry<String, UI> entry : containerOwnerUis.entrySet()) {
 			if (entry.getValue() == fiddleUi) {
 				toUnregister.add(entry.getKey());
 			}
