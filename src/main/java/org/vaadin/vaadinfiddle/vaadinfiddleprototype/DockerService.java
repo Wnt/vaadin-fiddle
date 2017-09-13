@@ -47,11 +47,13 @@ import com.vaadin.ui.UI;
 
 public class DockerService {
 
-	private static final int CPU_SHARES = 400000;
+	private static final int CPU_SHARES =  50000;
 	private static final int CPU_PERIOD = 100000;
 	private static final String IMAGE_NAME = "vaadin-stub";
 	private static final long MEMORY_LIMIT = 1024l * 1024l * 384l;
 	public static final int MAX_RUNNING_CONTAINERS = 4;
+	public static final int NPROC_SOFT = 400;
+	public static final int NPROC_HARD = NPROC_SOFT;
 	final private DockerClient dockerClient;
 	private List<String> runningContainers = new CopyOnWriteArrayList<>();
 
@@ -92,7 +94,7 @@ public class DockerService {
 	}
 
 	private Ulimit getUlimits() {
-		return new Ulimit("nproc", 1024, 1024);
+		return new Ulimit("nproc", NPROC_SOFT, NPROC_HARD);
 	}
 
 	private CreateContainerCmd createContainerStub() {
@@ -108,7 +110,7 @@ public class DockerService {
 
 				.withPortBindings(portBinding).withExposedPorts(exposedPort);
 		setLimits(cmd);
-		
+
 		return cmd;
 	}
 
@@ -260,7 +262,7 @@ public class DockerService {
 		if (stdout != null) {
 			cmd = cmdBuild.withAttachStdout(true).exec();
 
-			resultCallback = new ExecStartResultCallback(stdout, System.err);
+			resultCallback = new ExecStartResultCallback(stdout, stdout);
 		} else {
 			cmd = cmdBuild.exec();
 
