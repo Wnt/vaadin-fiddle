@@ -508,7 +508,9 @@ public class ContainerView extends ContainerDesign implements View {
 
 	private void updateTitle() {
 		String file = selectedFile != null ? selectedFile.getName() + " - " : "";
-		Page.getCurrent().setTitle(file + fiddleContainer.getName() + " - Container - VaadinFiddle");
+		String title = file + fiddleContainer.getName() + " - Container - VaadinFiddle";
+		// workaround for https://github.com/vaadin/framework/issues/10280 (History entries are saved with wrong title)
+		Page.getCurrent().getJavaScript().execute("document.title = '" + title + "';");
 	}
 
 	/**
