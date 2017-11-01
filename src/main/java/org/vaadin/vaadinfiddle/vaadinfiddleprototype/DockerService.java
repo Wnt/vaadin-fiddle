@@ -34,7 +34,6 @@ import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports.Binding;
-import com.github.dockerjava.api.model.Ulimit;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig.Builder;
@@ -47,13 +46,13 @@ import com.vaadin.ui.UI;
 
 public class DockerService {
 
-	private static final int CPU_SHARES =  50000;
+	private static final int CPU_SHARES = 50000;
 	private static final int CPU_PERIOD = 100000;
 	private static final String IMAGE_NAME = "vaadin-stub";
 	private static final long MEMORY_LIMIT = 1024l * 1024l * 384l;
 	public static final int MAX_RUNNING_CONTAINERS = 4;
-	public static final int NPROC_SOFT = 400;
-	public static final int NPROC_HARD = NPROC_SOFT;
+	// public static final int NPROC_SOFT = 400;
+	// public static final int NPROC_HARD = NPROC_SOFT;
 	final private DockerClient dockerClient;
 	private List<String> runningContainers = new CopyOnWriteArrayList<>();
 
@@ -84,18 +83,18 @@ public class DockerService {
 	}
 
 	private void setLimits(CreateContainerCmd command) {
-		command.withUlimits(getUlimits())
+		// .withUlimits(getUlimits())
 
-		.withMemory(MEMORY_LIMIT)
+		command.withMemory(MEMORY_LIMIT)
 
-		.withCpuPeriod(CPU_PERIOD)
+				.withCpuPeriod(CPU_PERIOD)
 
-		.withCpuShares(CPU_SHARES);
+				.withCpuShares(CPU_SHARES);
 	}
 
-	private Ulimit getUlimits() {
-		return new Ulimit("nproc", NPROC_SOFT, NPROC_HARD);
-	}
+	// private Ulimit getUlimits() {
+	// return new Ulimit("nproc", NPROC_SOFT, NPROC_HARD);
+	// }
 
 	private CreateContainerCmd createContainerStub() {
 		ExposedPort exposedPort = new ExposedPort(8080);
