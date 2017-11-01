@@ -15,6 +15,7 @@ import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.navigator.Navigator;
+import com.vaadin.navigator.PushStateNavigation;
 import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.ServiceException;
 import com.vaadin.server.VaadinRequest;
@@ -34,6 +35,7 @@ import com.vaadin.ui.Window;
  */
 @Theme("vaadin-fiddle")
 @Push
+@PushStateNavigation
 public class FiddleUi extends UI {
 
 	public static enum ViewIds {
@@ -57,7 +59,7 @@ public class FiddleUi extends UI {
 		Navigator navi = new Navigator(this, this);
 		navi.addView(ViewIds.CREATOR + "", CreatorView.class);
 		navi.addView(ViewIds.LIST + "", ListView.class);
-		navi.addView(ViewIds.CONTAINER + "", ContainerView.class);
+		navi.addView(ViewIds.CONTAINER + "", new ContainerView());
 		navi.addView(ViewIds.FORK + "", ForkView.class);
 		navi.addView(ViewIds.PREVIEW + "", PreviewView.class);
 

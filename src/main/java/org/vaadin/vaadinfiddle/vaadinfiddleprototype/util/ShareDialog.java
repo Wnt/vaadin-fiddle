@@ -1,17 +1,13 @@
 package org.vaadin.vaadinfiddle.vaadinfiddleprototype.util;
 
-import java.net.URI;
-
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi.ViewIds;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.components.PreviewImage;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 
 import com.vaadin.server.ExternalResource;
-import com.vaadin.server.Page;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.BrowserFrame;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.TextArea;
 import com.vaadin.ui.VerticalLayout;
@@ -21,14 +17,14 @@ public class ShareDialog extends Window {
 
 	private FiddleContainer fiddleContainer;
 	private String selectedFile;
-	private String host;
-	private String scheme;
 	private String frameURL;
+	private String deploymentURL;
 
-	public ShareDialog(FiddleContainer fiddleContainer, String selectedFile) {
+	public ShareDialog(FiddleContainer fiddleContainer, String selectedFile, String deploymentURL) {
 		super("Share preview");
 		this.fiddleContainer = fiddleContainer;
 		this.selectedFile = selectedFile;
+		this.deploymentURL = deploymentURL;
 		createUrls();
 		TabSheet tabs = new TabSheet();
 
@@ -53,18 +49,14 @@ public class ShareDialog extends Window {
 	}
 
 	private void createUrls() {
-		URI location = Page.getCurrent().getLocation();
-		host = location.getHost();
-		scheme = location.getScheme();
-		frameURL = scheme + "://" + host + "/editor/#!" + ViewIds.PREVIEW + "/" + fiddleContainer.getId()
-				+ selectedFile;
+		frameURL = deploymentURL + ViewIds.PREVIEW + "/" + fiddleContainer.getId() + selectedFile;
 	}
 
 	private VerticalLayout createBBCodeTab() {
 		String imageName = selectedFile + ".png";
 		imageName = fiddleContainer.getId() + imageName.replace('/', '_');
-		
-		String imgURL = scheme + "://" + host + "/editor/VAADIN/img/" + imageName;
+
+		String imgURL = deploymentURL + "VAADIN/img/" + imageName;
 		TextArea bbcodeField = new TextArea(null, "[url=" + frameURL + "][img]" + imgURL + "[/img][/url]");
 		bbcodeField.setRows(2);
 		bbcodeField.setWidth("100%");

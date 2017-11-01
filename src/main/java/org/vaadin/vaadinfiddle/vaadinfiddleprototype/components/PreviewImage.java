@@ -2,7 +2,6 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype.components;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.vaadin.server.ExternalResource;
@@ -35,11 +34,11 @@ public class PreviewImage extends CustomComponent {
 		Thread imgGeneratorThread = new Thread(() -> {
 			//TODO auto-detect paths from environment
 			// deployment time paths
-			String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
-			String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
+//			String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
+//			String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
 			// Development time paths
-			// String phantomJsExecutable = "phantomjs";
-			// String pathToScreenshotScript = "src/main/resources/screenshot.js";
+			 String phantomJsExecutable = "phantomjs";
+			 String pathToScreenshotScript = "src/main/resources/screenshot.js";
 			ProcessBuilder builder = new ProcessBuilder(phantomJsExecutable, pathToScreenshotScript, frameURL,
 					targetDirPath + "/" + imageName);
 
@@ -49,6 +48,9 @@ public class PreviewImage extends CustomComponent {
 				success = process.waitFor(30, TimeUnit.SECONDS);
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
+			}
+			if (!isAttached()) {
+				return;
 			}
 			if (success) {
 				getUI().access(() -> {

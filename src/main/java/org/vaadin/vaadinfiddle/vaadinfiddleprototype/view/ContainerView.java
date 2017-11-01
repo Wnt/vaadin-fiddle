@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -40,6 +41,7 @@ import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.server.BrowserWindowOpener;
+import com.vaadin.server.Extension;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.Page;
 import com.vaadin.shared.ui.ValueChangeMode;
@@ -66,29 +68,13 @@ public class ContainerView extends ContainerDesign implements View {
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 	private List<File> expandedDirectories = new ArrayList<>();
 	private File selectedFile;
-	private String fileToSelect;
 
-	@Override
-	public void enter(ViewChangeEvent event) {
-		parseParameters(event.getParameters());
-
-		if (!FiddleSession.getCurrent().ownsContainer(dockerId)) {
-			UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + dockerId);
-			return;
-		}
+	public ContainerView() {
+		super();
 
 		saveButton.addClickListener(e -> {
-			saveAllFiles();
-			restartJetty();
-
-			Notification notification = new Notification("Saving and restarting",
-					"This shouldn't take longer than a few seconds", Type.TRAY_NOTIFICATION);
-			notification.setDelayMsec(1000);
-			notification.show(Page.getCurrent());
+			onSaveClick();
 		});
-
-		BrowserWindowOpener opener = new BrowserWindowOpener("#!fork/" + dockerId);
-		opener.extend(forkButton);
 
 		shareButton.addClickListener(e -> {
 			openShareDialog();
@@ -99,10 +85,132 @@ public class ContainerView extends ContainerDesign implements View {
 			getUI().getNavigator().navigateTo("");
 		});
 
-		readContainerInfo();
+		initTree();
+
+		initTabSheet();
+	}
+
+	@Override
+	public void enter(ViewChangeEvent event) {
+		String params = event.getParameters();
+
+		int idFileSplit = params.indexOf("/");
+		String fileToSelect = null;
+		String requestedDockerId;
+		if (idFileSplit != -1) {
+			requestedDockerId = params.substring(0, idFileSplit);
+			fileToSelect = params.substring(idFileSplit);
+		} else {
+			requestedDockerId = params;
+		}
+
+		if (!FiddleSession.getCurrent().ownsContainer(requestedDockerId)) {
+			UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + requestedDockerId);
+			return;
+		}
+
+		boolean containerChanged = !Objects.equals(dockerId, requestedDockerId);
+		dockerId = requestedDockerId;
+
+		if (containerChanged) {
+			editorTabs.removeAllComponents();
+			fileToBinderMap.clear();
+			fileToEditorMap.clear();
+
+			Collection<Extension> forkExtensions = forkButton.getExtensions();
+			for (Extension extension : new ArrayList<>(forkExtensions)) {
+				forkButton.removeExtension(extension);
+			}
+			BrowserWindowOpener opener = new BrowserWindowOpener(getDeploymentURL() + "fork/" + dockerId);
+			opener.extend(forkButton);
+
+			readContainerInfo();
+			updateTitle();
+
+			populateTree();
+
+			Notification startupNotification;
+			if (fiddleContainer.isRunning()) {
+				createResultFrame();
+				startupNotification = new Notification("Console hidden",
+						"This fiddle was already running when you got here. If you want to see the console messages just hit save!",
+						Type.TRAY_NOTIFICATION);
+				startupNotification.setDelayMsec(5000);
+				startupNotification.show(Page.getCurrent());
+			} else if (fiddleContainer.isCreated()) {
+
+				FiddleUi.getDockerservice().startContainer(dockerId);
+
+				readContainerInfo();
+
+				FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel(), UI.getCurrent());
+
+			} else {
+				startupNotification = new Notification("Waking up",
+						"This fiddle was sleeping when you got here. Starting it up shouldn't longer than few seconds!",
+						Type.TRAY_NOTIFICATION);
+				startupNotification.setDelayMsec(5000);
+				startupNotification.show(Page.getCurrent());
+				restartJetty();
+			}
+		}
+
+		if (fileToSelect != null && !fileToSelect.isEmpty()) {
+			expandAndSelectFile(fileToSelect);
+		} else {
+			expandAndSelectFirstJavaFile();
+		}
+	}
+
+	private void initTabSheet() {
+		// TODO use closehandler that checks for unsaved modifications
+		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
+			File file = fileToEditorMap.inverse().get(tabContent);
+			fileToEditorMap.remove(file);
+			fileToBinderMap.remove(file);
+			editorTabs.removeComponent(tabContent);
+		});
+		// TODO do in design
+		editorTabs.setSizeFull();
+
+		editorTabs.addSelectedTabChangeListener(selectionEvent -> {
+			onEditorTabChange();
+		});
+	}
+
+	private void onEditorTabChange() {
+		File selectedFile = fileToEditorMap.inverse().get(editorTabs.getSelectedTab());
+
+		String relativeFilePath = selectedFile.getAbsolutePath()
+				.substring(fiddleContainer.getFiddleAppPath().length() + 1);
+
+		String deploymentURL = getDeploymentURL();
+		String permalink = deploymentURL + ViewIds.CONTAINER + "/" + dockerId + "/" + relativeFilePath;
+
+		String currentLocation = Page.getCurrent().getLocation().toString();
+		if (!currentLocation.startsWith(permalink)) {
+			Page.getCurrent().pushState(permalink);
+		}
 		updateTitle();
 
-		populateTree();
+		this.selectedFile = selectedFile;
+		expandAndSelectFile(relativeFilePath);
+		updateTitle();
+	}
+
+	/**
+	 * Assumes URL is deploymentUrl + "/" + ViewIds.CONTAINER
+	 * 
+	 * @return e.g. https://vaadinfiddle.com/editor
+	 */
+	private String getDeploymentURL() {
+		String currentLocation = Page.getCurrent().getLocation().toString();
+		int deploymentPathEndIdx = currentLocation.indexOf(ViewIds.CONTAINER.toString());
+		String deploymentURL = currentLocation.substring(0, deploymentPathEndIdx);
+		return deploymentURL;
+	}
+
+	private void initTree() {
 		getTree().setItemCaptionGenerator(File::getName);
 
 		getTree().addExpandListener(expandEvent -> {
@@ -126,43 +234,11 @@ public class ContainerView extends ContainerDesign implements View {
 			return VaadinIcons.FILE_O;
 		});
 
-		createTreeContextMenu();
-
-		// TODO use closehandler that checks for unsaved modifications
-		editorTabs.setCloseHandler((tabsheet, tabContent) -> {
-			File file = fileToEditorMap.inverse().get(tabContent);
-			fileToEditorMap.remove(file);
-			fileToBinderMap.remove(file);
-			editorTabs.removeComponent(tabContent);
-		});
-		editorTabs.setSizeFull();
-
-		editorTabs.addSelectedTabChangeListener(selectionEvent -> {
-			File selectedFile = fileToEditorMap.inverse().get(editorTabs.getSelectedTab());
-
-			String relativeFilePath = selectedFile.getAbsolutePath()
-					.substring(fiddleContainer.getFiddleAppPath().length() + 1);
-
-			String uriFragment = "!" + ViewIds.CONTAINER + "/" + dockerId + "/" + relativeFilePath;
-			Page.getCurrent().setUriFragment(uriFragment, false);
-			this.selectedFile = selectedFile;
-			expandAndSelectFile(relativeFilePath);
-			updateTitle();
-		});
+		addContextMenuToTree();
 
 		getTree().addSelectionListener(e -> {
-			File selectedFile = getTree().asSingleSelect().getValue();
-			if (selectedFile == null || selectedFile.isDirectory()) {
-				return;
-			}
-			showFileInEditor(selectedFile);
+			onTreeSelection();
 		});
-
-		if (fileToSelect != null && !fileToSelect.isEmpty()) {
-			expandAndSelectFile(fileToSelect);
-		} else {
-			expandAndSelectFirstJavaFile();
-		}
 
 		getTree().addExpandListener(e -> {
 			File[] children = e.getExpandedItem().listFiles();
@@ -172,35 +248,31 @@ public class ContainerView extends ContainerDesign implements View {
 				}
 			}
 		});
+	}
 
-		Notification startupNotification;
-		if (fiddleContainer.isRunning()) {
-			createResultFrame();
-			startupNotification = new Notification("Console hidden",
-					"This fiddle was already running when you got here. If you want to see the console messages just hit save!",
-					Type.TRAY_NOTIFICATION);
-			startupNotification.setDelayMsec(5000);
-			startupNotification.show(Page.getCurrent());
-		} else if (fiddleContainer.isCreated()) {
-
-			FiddleUi.getDockerservice().startContainer(dockerId);
-
-			readContainerInfo();
-
-			FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel(), UI.getCurrent());
-
-		} else {
-			startupNotification = new Notification("Waking up",
-					"This fiddle was sleeping when you got here. Starting it up shouldn't longer than few seconds!",
-					Type.TRAY_NOTIFICATION);
-			startupNotification.setDelayMsec(5000);
-			startupNotification.show(Page.getCurrent());
-			restartJetty();
+	private void onTreeSelection() {
+		File selectedFile = getTree().asSingleSelect().getValue();
+		if (selectedFile == null || selectedFile.isDirectory()) {
+			return;
 		}
+		showFileInEditor(selectedFile);
+	}
+
+	private void onSaveClick() {
+		saveAllFiles();
+		restartJetty();
+
+		Notification notification = new Notification("Saving and restarting",
+				"This shouldn't take longer than a few seconds", Type.TRAY_NOTIFICATION);
+		notification.setDelayMsec(1000);
+		notification.show(Page.getCurrent());
 	}
 
 	private void openShareDialog() {
-		Window window = new ShareDialog(fiddleContainer, getSelectedFileRelativePath());
+		String currentLocation = Page.getCurrent().getLocation().toString();
+		int deploymentPathEndIdx = currentLocation.indexOf(ViewIds.CONTAINER.toString());
+		String deploymentURL = currentLocation.substring(0, deploymentPathEndIdx);
+		Window window = new ShareDialog(fiddleContainer, getSelectedFileRelativePath(), deploymentURL);
 		window.setModal(true);
 
 		UI.getCurrent().addWindow(window);
@@ -222,23 +294,7 @@ public class ContainerView extends ContainerDesign implements View {
 		return tree;
 	}
 
-	/**
-	 * Parses view enter parameters into fileToSelect and dockerId fields
-	 * 
-	 * @param params
-	 */
-	private void parseParameters(String params) {
-		int idFileSplit = params.indexOf("/");
-		fileToSelect = null;
-		if (idFileSplit != -1) {
-			dockerId = params.substring(0, idFileSplit);
-			fileToSelect = params.substring(idFileSplit);
-		} else {
-			dockerId = params;
-		}
-	}
-
-	private void createTreeContextMenu() {
+	private void addContextMenuToTree() {
 		GridContextMenu<File> contextMenu = getTree().getContextMenu();
 		contextMenu.addGridBodyContextMenuListener(this::onContextMenuOpen);
 	}
@@ -253,7 +309,7 @@ public class ContainerView extends ContainerDesign implements View {
 
 		if (contextEvent.getItem() != null) {
 			File f = (File) contextEvent.getItem();
-			
+
 			getTree().select(f);
 
 			File dir = f.isDirectory() ? f : f.getParentFile();

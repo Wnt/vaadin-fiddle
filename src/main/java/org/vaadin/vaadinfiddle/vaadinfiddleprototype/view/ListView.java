@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.DockerService;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi.ViewIds;
 
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.Container;
@@ -57,7 +58,6 @@ public class ListView extends CustomComponent implements View {
 		refreshList();
 	}
 
-
 	private void createList() {
 
 		grid = new Grid<>();
@@ -92,7 +92,12 @@ public class ListView extends CustomComponent implements View {
 
 	private void createColumnTools() {
 		grid.addColumn(((ValueProvider<Container, String>) c -> {
-			String containerPage = "#!container/" + c.getId();
+
+			String currentLocation = Page.getCurrent().getLocation().toString();
+			int deploymentPathEndIdx = currentLocation.indexOf(ViewIds.LIST.toString());
+			String deploymentURL = currentLocation.substring(0, deploymentPathEndIdx);
+
+			String containerPage = deploymentURL + "container/" + c.getId();
 			return "<a href=\"" + containerPage + "\" title=\"Inspect container\">"
 					+ VaadinIcons.EXTERNAL_LINK.getHtml() + "</a>";
 		}), new HtmlRenderer()).setCaption("Tools");
@@ -145,8 +150,6 @@ public class ListView extends CustomComponent implements View {
 		List<Container> containerList = dockerService.getContainers();
 		grid.setItems(containerList);
 	}
-
-	
 
 	@Override
 	public void enter(ViewChangeEvent event) {

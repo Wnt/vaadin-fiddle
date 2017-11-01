@@ -14,21 +14,25 @@
 	</prerequisites>
 
 	<properties>
-		<vaadin.version>8.1.3</vaadin.version>
-		<vaadin.plugin.version>8.1.3</vaadin.plugin.version>
+		<vaadin.version>8.2.0.alpha2</vaadin.version>
+		<vaadin.plugin.version>8.1-SNAPSHOT</vaadin.plugin.version>
 		<jetty.plugin.version>9.3.9.v20160517</jetty.plugin.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<!-- If there are no local customisations, this can also be "fetch" or 
+		<!-- If there are no local customisations, this can also be "fetch" or
 			"cdn" -->
-		<vaadin.widgetset.mode>fetch</vaadin.widgetset.mode>
+		<vaadin.widgetset.mode>local</vaadin.widgetset.mode>
 	</properties>
 
 	<repositories>
 		<repository>
 			<id>vaadin-addons</id>
 			<url>http://maven.vaadin.com/vaadin-addons</url>
+		</repository>
+		<repository>
+			<id>vaadin-test</id>
+			<url>https://oss.sonatype.org/content/repositories/comvaadin-2216/</url>
 		</repository>
 	</repositories>
 
@@ -133,7 +137,7 @@
 				</configuration>
 			</plugin>
 
-			<!-- The Jetty plugin allows us to easily test the development build by 
+			<!-- The Jetty plugin allows us to easily test the development build by
 				running jetty:run on the command line. -->
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
