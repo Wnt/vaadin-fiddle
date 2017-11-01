@@ -91,29 +91,37 @@ sudo chown root:docker /var/lib/docker/volumes
 sudo chmod 750 /var/lib/docker/volumes
 ```
 ## Optional: automatically set directory permissions
-Create directory to host local docker service customisation
-```
-mkdir /etc/systemd/system/docker.service.d/
-```
-and add the following content into `/etc/systemd/system/docker.service.d/directory_permissions.conf`:
-```
-[Service]
-ExecStartPost=/usr/local/bin/docker_directory_permissions.sh
-```
-then create `/usr/local/bin/docker_directory_permissions.sh` and put following content into there:
+Because the Docker service resets the directory permissions to `root:root` startup, we need to set our special permissions each time the service is started. Create `/usr/local/bin/docker_directory_permissions.sh` with the following content:
 ```
 #!/usr/bin/env bash
 chown root:docker /var/lib/docker
 chown root:docker /var/lib/docker/volumes
 chmod 750 /var/lib/docker/volumes
 ```
-and set it executable: `sudo chmod +x /usr/local/bin/docker_directory_permissions.sh`
-then run:
+and set it executable:
+```
+sudo chmod +x /usr/local/bin/docker_directory_permissions.sh
+```
+Next we need to make the system run that script whenever the Docker service is started. Create directory to host local docker service customization:
+```
+sudo mkdir /etc/systemd/system/docker.service.d/
+```
+add the following content into `/etc/systemd/system/docker.service.d/directory_permissions.conf`:
+```
+[Service]
+ExecStartPost=/usr/local/bin/docker_directory_permissions.sh
+```
+and reload the systemd manager configuration and restart the service e.g. by running:
 ```
 sudo systemctl daemon-reload
 sudo systemctl restart docker.service
 ```
-to restart the service
+Now you should get the more relaxed directory permissions in `/var/lib/docker/volumes`:
+```
+ls -ld /var/lib/docker/volumes
+drwxr-x--- 4 root docker 4096 loka  27 13:59 /var/lib/docker/volumes
+```
+
 ## Optional: restrict container networking
 ```
 sudo apt instal ufw
