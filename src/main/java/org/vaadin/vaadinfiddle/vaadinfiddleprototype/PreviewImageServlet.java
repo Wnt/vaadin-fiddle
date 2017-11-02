@@ -53,8 +53,10 @@ public class PreviewImageServlet extends HttpServlet {
 
 		File file = new File(resourcePath, requestedFile);
 
+		File resourceRootDir = new File(resourcePath);
+		
 		// Check if file actually exists in filesystem.
-		if (!file.exists()) {
+		if (!file.exists() && !file.getAbsolutePath().startsWith(resourceRootDir.getAbsolutePath())) {
 			// Do your thing if the file appears to be non-existing.
 			// Throw an exception, or send 404, or show default/warning page, or just ignore
 			// it.
