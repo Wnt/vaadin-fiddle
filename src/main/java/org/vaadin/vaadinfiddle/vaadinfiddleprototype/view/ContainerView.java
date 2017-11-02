@@ -68,6 +68,7 @@ public class ContainerView extends ContainerDesign implements View {
 	private Map<File, Binder<File>> fileToBinderMap = new HashMap<>();
 	private List<File> expandedDirectories = new ArrayList<>();
 	private File selectedFile;
+	private boolean userCanEdit;
 
 	public ContainerView() {
 		super();
@@ -104,15 +105,21 @@ public class ContainerView extends ContainerDesign implements View {
 			requestedDockerId = params;
 		}
 
-		if (!FiddleSession.getCurrent().ownsContainer(requestedDockerId)) {
-			UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + requestedDockerId);
-			return;
-		}
+		userCanEdit = FiddleSession.getCurrent().ownsContainer(requestedDockerId);
 
 		boolean containerChanged = !Objects.equals(dockerId, requestedDockerId);
 		dockerId = requestedDockerId;
 
 		if (containerChanged) {
+			if (!userCanEdit) {
+				showReadOnlyNotification(Type.TRAY_NOTIFICATION);
+				saveButton.setEnabled(false);
+				saveButton.setDescription("Please fork the fiddle to persist modifications.");
+			}
+			else {
+				saveButton.setEnabled(true);
+				saveButton.setDescription("Save all open files (Ctrl + Enter)");
+			}
 			editorTabs.removeAllComponents();
 			fileToBinderMap.clear();
 			fileToEditorMap.clear();
@@ -307,7 +314,11 @@ public class ContainerView extends ContainerDesign implements View {
 	private void onContextMenuOpen(GridContextMenuOpenEvent<File> contextEvent) {
 		contextEvent.getContextMenu().removeItems();
 
-		if (contextEvent.getItem() != null) {
+		if (!userCanEdit) {
+			contextEvent.getContextMenu().addItem("Fork", VaadinIcons.COPY_O, selectedItem -> {
+				UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + dockerId);
+			});
+		} else if (contextEvent.getItem() != null) {
 			File f = (File) contextEvent.getItem();
 
 			getTree().select(f);
@@ -509,7 +520,8 @@ public class ContainerView extends ContainerDesign implements View {
 	private void updateTitle() {
 		String file = selectedFile != null ? selectedFile.getName() + " - " : "";
 		String title = file + fiddleContainer.getName() + " - Container - VaadinFiddle";
-		// workaround for https://github.com/vaadin/framework/issues/10280 (History entries are saved with wrong title)
+		// workaround for https://github.com/vaadin/framework/issues/10280 (History
+		// entries are saved with wrong title)
 		Page.getCurrent().getJavaScript().execute("document.title = '" + title + "';");
 	}
 
@@ -559,6 +571,8 @@ public class ContainerView extends ContainerDesign implements View {
 		Binding<File, String> binding = bb.bind(new FileToStringValueProvider(), new StringToFileSetter());
 		binder.readBean(selectedFile);
 
+		// TODO set to read only if userCanEdit is false
+
 		codeMirrorField.setSizeFull();
 
 		fileToEditorMap.put(selectedFile, codeMirrorField);
@@ -569,7 +583,11 @@ public class ContainerView extends ContainerDesign implements View {
 
 		codeMirrorField.addValueChangeListener(e -> {
 			if (!codeMirrorField.getValue().equals(origValue)) {
-				tab.setCaption(fileName + " *");
+				if (userCanEdit) {
+					tab.setCaption(fileName + " *");
+				} else {
+					showReadOnlyNotification();
+				}
 			} else {
 				tab.setCaption(fileName);
 			}
@@ -577,6 +595,19 @@ public class ContainerView extends ContainerDesign implements View {
 
 		tab.setClosable(true);
 		return tab;
+	}
+
+	private void showReadOnlyNotification() {
+		Type type = Type.WARNING_MESSAGE;
+		showReadOnlyNotification(type);
+	}
+
+	private void showReadOnlyNotification(Type type) {
+		Notification forkNotif = new Notification("Fiddle open in read only mode", "Please <a href=\""
+				+ getDeploymentURL() + ViewIds.FORK + "/" + dockerId + "\">fork it</a> to persist modifications.", type,
+				true);
+		forkNotif.setDelayMsec(1000000);
+		forkNotif.show(Page.getCurrent());
 	}
 
 	private void expandAndSelectFirstJavaFile() {
