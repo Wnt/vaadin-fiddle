@@ -34,11 +34,11 @@ public class PreviewImage extends CustomComponent {
 		Thread imgGeneratorThread = new Thread(() -> {
 			//TODO auto-detect paths from environment
 			// deployment time paths
-//			String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
-//			String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
+			String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
+			String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
 			// Development time paths
-			 String phantomJsExecutable = "phantomjs";
-			 String pathToScreenshotScript = "src/main/resources/screenshot.js";
+//			 String phantomJsExecutable = "phantomjs";
+//			 String pathToScreenshotScript = "src/main/resources/screenshot.js";
 			ProcessBuilder builder = new ProcessBuilder(phantomJsExecutable, pathToScreenshotScript, frameURL,
 					targetDirPath + "/" + imageName);
 
