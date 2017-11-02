@@ -2,9 +2,12 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 
+import org.apache.commons.lang.StringUtils;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ContainerView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.CreatorView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ForkView;
@@ -16,6 +19,9 @@ import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
 import com.vaadin.navigator.Navigator;
 import com.vaadin.navigator.PushStateNavigation;
+import com.vaadin.server.BootstrapFragmentResponse;
+import com.vaadin.server.BootstrapListener;
+import com.vaadin.server.BootstrapPageResponse;
 import com.vaadin.server.DeploymentConfiguration;
 import com.vaadin.server.ServiceException;
 import com.vaadin.server.VaadinRequest;
@@ -90,7 +96,44 @@ public class FiddleUi extends UI {
 			return service;
 
 		}
+
+		@Override
+		protected void servletInitialized() throws ServletException {
+			super.servletInitialized();
+			getService()
+					.addSessionInitListener(event -> event.getSession().addBootstrapListener(new BootstrapListener() {
+
+						@Override
+						public void modifyBootstrapPage(BootstrapPageResponse response) {
+							String pathInfo = response.getRequest().getPathInfo();
+
+							String containerViewPrefix = "/container/";
+							if (pathInfo.startsWith(containerViewPrefix)) {
+
+								String imgFilename = pathInfo.substring(containerViewPrefix.length()).replace('/', '_')
+										+ ".png";
+
+								int dirs = StringUtils.countMatches(pathInfo, "/");
+								String relativePathToContextRoot = String.join("",
+										Collections.nCopies(dirs - 1, "../"));
+								response.getDocument().head()
+										.append("<meta property=\"og:title\" content=\"Hello world!\" />\n"
+												+ "<meta property=\"og:image\" content=\"" + relativePathToContextRoot
+												+ "preview-image/" + imgFilename + "\" />");
+
+							}
+
+						}
+
+						@Override
+						public void modifyBootstrapFragment(BootstrapFragmentResponse response) {
+							// TODO Auto-generated method stub
+
+						}
+					}));
+		}
 	}
+
 	@Override
 	public void detach() {
 		super.detach();
