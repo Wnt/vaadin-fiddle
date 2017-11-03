@@ -2,12 +2,10 @@ package org.vaadin.vaadinfiddle.vaadinfiddleprototype;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 
-import org.apache.commons.lang.StringUtils;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ContainerView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.CreatorView;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ForkView;
@@ -112,14 +110,17 @@ public class FiddleUi extends UI {
 
 								String imgFilename = pathInfo.substring(containerViewPrefix.length()).replace('/', '_')
 										+ ".png";
+								String filename = pathInfo.substring(pathInfo.lastIndexOf('/') + 1);
 
-								int dirs = StringUtils.countMatches(pathInfo, "/");
-								String relativePathToContextRoot = String.join("",
-										Collections.nCopies(dirs - 1, "../"));
+								// TODO look up from enviroment
+								String ContextRootUrl = "https://vaadinfiddle.com/editor/";
 								response.getDocument().head()
-										.append("<meta property=\"og:title\" content=\"Hello world!\" />\n"
-												+ "<meta property=\"og:image\" content=\"" + relativePathToContextRoot
-												+ "preview-image/" + imgFilename + "\" />");
+										.append("<meta property=\"og:type\" content=\"website\" />\n"
+												+ "<meta property=\"og:title\" content=\"" + filename
+												+ " on VaadinFiddle\" />\n" + "<meta property=\"og:image\" content=\""
+												+ ContextRootUrl + "preview-image/" + imgFilename + "\" />\n"
+												+ "<meta property=\"og:image:width\" content=\"1067\" />\n"
+												+ "<meta property=\"og:image:height\" content=\"473\" />");
 
 							}
 
