@@ -16,6 +16,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.vaadin.vaadinfiddle.vaadinfiddleprototype.components.PreviewImage;
+
 import com.vaadin.server.VaadinServlet;
 
 /**
@@ -54,9 +56,17 @@ public class PreviewImageServlet extends HttpServlet {
 		File file = new File(resourcePath, requestedFile);
 
 		File resourceRootDir = new File(resourcePath);
-		
+
+		if (!file.getAbsolutePath().startsWith(resourceRootDir.getAbsolutePath())) {
+			response.sendError(HttpServletResponse.SC_FORBIDDEN);
+			return;
+		}
+
 		// Check if file actually exists in filesystem.
-		if (!file.exists() && !file.getAbsolutePath().startsWith(resourceRootDir.getAbsolutePath())) {
+		if (!file.exists()) {
+			createScreenshot(requestedFile);
+		}
+		if (!file.exists()) {
 			// Do your thing if the file appears to be non-existing.
 			// Throw an exception, or send 404, or show default/warning page, or just ignore
 			// it.
@@ -93,6 +103,22 @@ public class PreviewImageServlet extends HttpServlet {
 				output.write(buffer, 0, length);
 			}
 		}
+	}
+
+	private void createScreenshot(String requestedFile) {
+		// TODO look up from environment
+		String previewViewUrl = "https://vaadinfiddle.com/editor/preview";
+
+		String frameURL = previewViewUrl + requestedFile.replace('_', '/').substring(0, requestedFile.length() - 4);
+
+		// TODO look up from environment
+		String baseDirectory = "/var/lib/tomcat8/webapps/ROOT/";
+
+		String targetDirPath = PreviewImageServlet.getResourcePath(getServletContext(), "/preview-image");
+
+		String imageAbsolutePath = targetDirPath + requestedFile;
+		PreviewImage.createImage(frameURL, baseDirectory, imageAbsolutePath);
+
 	}
 
 	/**

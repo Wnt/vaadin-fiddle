@@ -113,13 +113,13 @@ public class FiddleUi extends UI {
 								String filename = pathInfo.substring(pathInfo.lastIndexOf('/') + 1);
 
 								// TODO look up from enviroment
-								String contextRootUrl = "https://vaadinfiddle.com/editor/";
+								String contextRootUrl = "https://vaadinfiddle.com/editor";
 								response.getDocument().head()
 										.append("<meta property=\"og:url\" content=\"" + contextRootUrl + pathInfo
 												+ "\" />\n" + "<meta property=\"og:type\" content=\"website\" />\n"
 												+ "<meta property=\"og:title\" content=\"" + filename
 												+ " on VaadinFiddle\" />\n" + "<meta property=\"og:image\" content=\""
-												+ contextRootUrl + "preview-image/" + imgFilename + "\" />\n"
+												+ contextRootUrl + "/preview-image/" + imgFilename + "\" />\n"
 												+ "<meta property=\"og:image:width\" content=\"1067\" />\n"
 												+ "<meta property=\"og:image:height\" content=\"473\" />");
 

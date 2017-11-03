@@ -41,30 +41,14 @@ public class PreviewImage extends CustomComponent {
 		}
 
 		String imageAbsolutePath = targetDirPath + "/" + imageName;
-		File imageFile = new File(imageAbsolutePath);
-		
-		if (imageFile.exists()) {
-			showImage(imageName, servletContext);
-		} else {
+//		File imageFile = new File(imageAbsolutePath);
+
+//		if (imageFile.exists()) {
+//			showImage(imageName, servletContext);
+//		} else {
 			// TODO replace with a thread pool
 			Thread imgGeneratorThread = new Thread(() -> {
-				// TODO auto-detect paths from environment
-				// deployment time paths
-				String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
-				String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
-				// Development time paths
-//				String phantomJsExecutable = "phantomjs";
-//				String pathToScreenshotScript = "src/main/resources/screenshot.js";
-				ProcessBuilder builder = new ProcessBuilder(phantomJsExecutable, pathToScreenshotScript, frameURL,
-						imageAbsolutePath);
-
-				boolean success = false;
-				try {
-					Process process = builder.start();
-					success = process.waitFor(30, TimeUnit.SECONDS);
-				} catch (IOException | InterruptedException e) {
-					e.printStackTrace();
-				}
+				boolean success = createImage(frameURL, baseDirectory + "", imageAbsolutePath);
 				if (!isAttached()) {
 					return;
 				}
@@ -81,8 +65,29 @@ public class PreviewImage extends CustomComponent {
 			});
 
 			imgGeneratorThread.start();
-		}
+//		}
 
+	}
+
+	public static boolean createImage(String frameURL, String baseDirectory, String imageAbsolutePath) {
+		// TODO auto-detect paths from environment
+		// deployment time paths
+		String phantomJsExecutable = "/opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs";
+		String pathToScreenshotScript = baseDirectory + "/WEB-INF/classes/screenshot.js";
+		// Development time paths
+//		String phantomJsExecutable = "phantomjs";
+//		String pathToScreenshotScript = "src/main/resources/screenshot.js";
+		ProcessBuilder builder = new ProcessBuilder(phantomJsExecutable, pathToScreenshotScript, frameURL,
+				imageAbsolutePath);
+
+		boolean success = false;
+		try {
+			Process process = builder.start();
+			success = process.waitFor(30, TimeUnit.SECONDS);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
+		return success;
 	}
 
 	private void showImage(String imageName, ServletContext servletContext) {
