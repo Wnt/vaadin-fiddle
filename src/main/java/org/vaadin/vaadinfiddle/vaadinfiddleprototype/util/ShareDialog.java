@@ -19,6 +19,7 @@ public class ShareDialog extends Window {
 	private String selectedFile;
 	private String frameURL;
 	private String deploymentURL;
+	private String editorUiURL;
 
 	public ShareDialog(FiddleContainer fiddleContainer, String selectedFile, String deploymentURL) {
 		super("Share preview");
@@ -50,14 +51,16 @@ public class ShareDialog extends Window {
 
 	private void createUrls() {
 		frameURL = deploymentURL + ViewIds.PREVIEW + "/" + fiddleContainer.getId() + selectedFile;
+		editorUiURL = deploymentURL + ViewIds.CONTAINER + "/" + fiddleContainer.getId() + selectedFile;
 	}
 
 	private VerticalLayout createBBCodeTab() {
 		String imageName = selectedFile + ".png";
 		imageName = fiddleContainer.getId() + imageName.replace('/', '_');
 
-		String imgURL = deploymentURL + "VAADIN/img/" + imageName;
-		TextArea bbcodeField = new TextArea(null, "[url=" + frameURL + "][img]" + imgURL + "[/img][/url]");
+		String imgURL = deploymentURL + "preview-image/" + imageName;
+		TextArea bbcodeField = new TextArea(null, "[url=" + editorUiURL + "][img]" + imgURL + "[/img]\n" + 
+				"See the full sample on vaadinfiddle.com[/url]");
 		bbcodeField.setRows(2);
 		bbcodeField.setWidth("100%");
 
