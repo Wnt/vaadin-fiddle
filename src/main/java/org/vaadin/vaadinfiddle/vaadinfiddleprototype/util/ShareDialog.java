@@ -50,7 +50,7 @@ public class ShareDialog extends Window {
 	}
 
 	private void createUrls() {
-		frameURL = deploymentURL + ViewIds.PREVIEW + "/" + fiddleContainer.getId() + selectedFile;
+		frameURL = deploymentURL +  "/" + fiddleContainer.getId() + selectedFile;
 		editorUiURL = deploymentURL + ViewIds.CONTAINER + "/" + fiddleContainer.getId() + selectedFile;
 	}
 

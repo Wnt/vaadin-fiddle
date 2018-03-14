@@ -15,14 +15,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.vaadin.addon.codemirror.CodeMirrorField;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleSession;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.FiddleUi.ViewIds;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.components.TreeWithContextMenu;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.data.FiddleContainer;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileSystemProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileToStringValueProvider;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.FileTypeUtil;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.PanelOutput;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.ShareDialog;
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.util.StringToFileSetter;
 
@@ -135,31 +133,8 @@ public class ContainerView extends ContainerDesign implements View {
 			updateTitle();
 
 			populateTree();
-
-			Notification startupNotification;
-			if (fiddleContainer.isRunning()) {
-				createResultFrame();
-				startupNotification = new Notification("Console hidden",
-						"This fiddle was already running when you got here. If you want to see the console messages just hit save!",
-						Type.TRAY_NOTIFICATION);
-				startupNotification.setDelayMsec(5000);
-				startupNotification.show(Page.getCurrent());
-			} else if (fiddleContainer.isCreated()) {
-
-				FiddleUi.getDockerservice().startContainer(dockerId);
-
-				readContainerInfo();
-
-				FiddleUi.getDockerservice().runJetty(dockerId, createConsolePanel(), UI.getCurrent());
-
-			} else {
-				startupNotification = new Notification("Waking up",
-						"This fiddle was sleeping when you got here. Starting it up shouldn't longer than few seconds!",
-						Type.TRAY_NOTIFICATION);
-				startupNotification.setDelayMsec(5000);
-				startupNotification.show(Page.getCurrent());
-				restartJetty();
-			}
+			
+			createResultFrame();
 		}
 
 		if (fileToSelect != null && !fileToSelect.isEmpty()) {
@@ -267,7 +242,6 @@ public class ContainerView extends ContainerDesign implements View {
 
 	private void onSaveClick() {
 		saveAllFiles();
-		restartJetty();
 
 		Notification notification = new Notification("Saving and restarting",
 				"This shouldn't take longer than a few seconds", Type.TRAY_NOTIFICATION);
@@ -314,11 +288,7 @@ public class ContainerView extends ContainerDesign implements View {
 	private void onContextMenuOpen(GridContextMenuOpenEvent<File> contextEvent) {
 		contextEvent.getContextMenu().removeItems();
 
-		if (!userCanEdit) {
-			contextEvent.getContextMenu().addItem("Fork", VaadinIcons.COPY_O, selectedItem -> {
-				UI.getCurrent().getNavigator().navigateTo(ViewIds.FORK + "/" + dockerId);
-			});
-		} else if (contextEvent.getItem() != null) {
+		if (contextEvent.getItem() != null) {
 			File f = (File) contextEvent.getItem();
 
 			getTree().select(f);
@@ -604,7 +574,7 @@ public class ContainerView extends ContainerDesign implements View {
 
 	private void showReadOnlyNotification(Type type) {
 		Notification forkNotif = new Notification("Fiddle open in read only mode", "Please <a href=\""
-				+ getDeploymentURL() + ViewIds.FORK + "/" + dockerId + "\">fork it</a> to persist modifications.", type,
+				+ getDeploymentURL() +  "/" + dockerId + "\">fork it</a> to persist modifications.", type,
 				true);
 		forkNotif.setDelayMsec(1000000);
 		forkNotif.show(Page.getCurrent());
@@ -640,15 +610,33 @@ public class ContainerView extends ContainerDesign implements View {
 	}
 
 	private void readContainerInfo() {
-		fiddleContainer = FiddleUi.getDockerservice().getFiddleContainerById(dockerId);
+		fiddleContainer = new FiddleContainer() {
+			
+			@Override
+			public String getName() {
+				return "Test Container";
+			}
+			
+			@Override
+			public String getId() {
+				return "1";
+			}
+			
+			@Override
+			public File getFiddleDirectory() {
+				return new File(getFiddleAppPath());
+			}
+			
+			@Override
+			public String getFiddleAppPath() {
+				return System.getProperty("fiddle.directory");
+			}
+		};
 	}
 
 	private void createResultFrame() {
-		URI location = Page.getCurrent().getLocation();
-		String host = location.getHost();
-		String scheme = location.getScheme();
-		BrowserFrame frame = new BrowserFrame("",
-				new ExternalResource(scheme + "://" + host + "/container/" + fiddleContainer.getId()));
+		String frameUrl = getFrameUrl(fiddleContainer);
+		BrowserFrame frame = new BrowserFrame("", new ExternalResource(frameUrl));
 		frame.setSizeFull();
 
 		Panel resultPanel = new Panel("Fiddle result app", frame);
@@ -660,55 +648,14 @@ public class ContainerView extends ContainerDesign implements View {
 
 	}
 
-	private void restartJetty() {
-		Collection<Window> windows = new ArrayList<>(UI.getCurrent().getWindows());
-		for (Window w : windows) {
-			w.close();
-		}
-
-		mainAreaAndFiddleResult.setSecondComponent(null);
-		mainAreaAndFiddleResult.setSplitPosition(100, Unit.PERCENTAGE);
-
-		PanelOutput consoleOutput = createConsolePanel();
-		FiddleUi.getDockerservice().restartJetty(fiddleContainer.getId(), consoleOutput, UI.getCurrent());
-		readContainerInfo();
+	private static String getFrameUrl(FiddleContainer fiddleContainer) {
+		URI location = Page.getCurrent().getLocation();
+		String host = location.getHost();
+		String scheme = location.getScheme();
+		String frameUrl = scheme + "://" + host + "/container/" + fiddleContainer.getId();
+		return frameUrl;
 	}
 
-	private PanelOutput createConsolePanel() {
-		PanelOutput consoleOutput = new PanelOutput();
-		consoleOutput.addJettyStartListener(() -> {
-			editorTabs.getUI().access(() -> {
-				createResultFrame();
-
-				if (!startedMessageShown) {
-					startedMessageShown = true;
-					Notification notification = new Notification("Fiddle up n running",
-							"Fiddle result is now running in the right panel. Try editing the code and hit save!",
-							Type.TRAY_NOTIFICATION);
-					notification.setDelayMsec(5000);
-					notification.show(Page.getCurrent());
-				}
-
-			});
-		});
-		consoleOutput.addFirstLineReceivedListener(() -> {
-			editorTabs.getUI().access(() -> editorTabsAndConsole.setSplitPosition(200, Unit.PIXELS, true));
-		});
-		consoleOutput.addErrorListener(() -> {
-			editorTabs.getUI().access(() -> {
-
-				Notification notification = new Notification("Error occurred", "Check the console output for more info",
-						Type.WARNING_MESSAGE);
-				notification.setDelayMsec(Notification.DELAY_FOREVER);
-				notification.show(Page.getCurrent());
-
-			});
-		});
-		Panel consolePanel = consoleOutput.getOutputPanel();
-		consolePanel.setCaption("Console");
-		editorTabsAndConsole.setSecondComponent(consolePanel);
-		return consoleOutput;
-	}
 
 	private void saveAllFiles() {
 		for (Component component : editorTabs) {

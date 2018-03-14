@@ -7,10 +7,6 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 
 import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ContainerView;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.CreatorView;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ForkView;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.ListView;
-import org.vaadin.vaadinfiddle.vaadinfiddleprototype.view.PreviewView;
 
 import com.vaadin.annotations.Push;
 import com.vaadin.annotations.Theme;
@@ -43,7 +39,7 @@ import com.vaadin.ui.Window;
 public class FiddleUi extends UI {
 
 	public static enum ViewIds {
-		CREATOR(""), LIST("list"), CONTAINER("container"), FORK("fork"), PREVIEW("preview");
+		CONTAINER("");
 		private final String id;
 
 		ViewIds(final String s) {
@@ -55,17 +51,11 @@ public class FiddleUi extends UI {
 		}
 	};
 
-	final private static DockerService dockerService = new DockerService();
-
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
 
 		Navigator navi = new Navigator(this, this);
-		navi.addView(ViewIds.CREATOR + "", CreatorView.class);
-		navi.addView(ViewIds.LIST + "", ListView.class);
 		navi.addView(ViewIds.CONTAINER + "", new ContainerView());
-		navi.addView(ViewIds.FORK + "", ForkView.class);
-		navi.addView(ViewIds.PREVIEW + "", PreviewView.class);
 
 		navi.addViewChangeListener(e -> {
 
@@ -75,10 +65,6 @@ public class FiddleUi extends UI {
 			}
 			return true;
 		});
-	}
-
-	public static DockerService getDockerservice() {
-		return dockerService;
 	}
 
 	@WebServlet(urlPatterns = { "/*" }, name = "VaadinFiddleUiServlet", asyncSupported = true)
@@ -139,6 +125,5 @@ public class FiddleUi extends UI {
 	@Override
 	public void detach() {
 		super.detach();
-		FiddleUi.getDockerservice().unregisterUI(this);
 	}
 }
